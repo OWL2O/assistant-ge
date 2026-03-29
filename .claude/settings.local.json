@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(cat \"c:/Users/PC/Desktop/assistant-ge/.next/types/app/dashboard/\\(pages\\)/page.ts\")",
+      "Bash(ls \"c:/Users/PC/Desktop/assistant-ge/app/dashboard/\\(pages\\)/\")"
+    ]
+  }
+}

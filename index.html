@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINS · TBC იმპორტი</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+  :root {
+    --bg:       #0f0f12;
+    --surface:  #16161c;
+    --surface2: #1e1e27;
+    --border:   #2a2a38;
+    --border2:  #353548;
+    --accent:   #6c8eff;
+    --accent2:  #4ade80;
+    --warn:     #fbbf24;
+    --danger:   #f87171;
+    --text:     #e8e8f0;
+    --text2:    #8888aa;
+    --text3:    #55556a;
+    --income:   #1a3a2a;
+    --income-border: #2d6b47;
+    --expense:  #3a1a1a;
+    --expense-border: #7a3535;
+    --locked:   #1a1a2e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); font-style: italic; }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+    line-height: 1.6;
+  }
+  .header-meta b { color: var(--text2); }
+  .org-badge {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .org-badge:hover { border-color: var(--accent); color: var(--text); }
+  .org-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); flex-shrink: 0; }
+  .org-dot.demo { background: var(--warn); }
+  .org-badge b { color: var(--text); }
+
+  /* ─── ORG SELECT SCREEN ─── */
+  #org-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 61px);
+    padding: 40px;
+  }
+  .org-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 40px 48px;
+    max-width: 520px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .org-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(108,142,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .org-card-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+  .org-card-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 28px;
+    line-height: 1.6;
+  }
+  .org-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .org-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 13px 16px;
+    cursor: pointer;
+    transition: all 0.18s;
+    width: 100%;
+    text-align: left;
+  }
+  .org-item:hover { border-color: var(--accent); background: rgba(108,142,255,0.06); }
+  .org-item .org-icon { font-size: 20px; flex-shrink: 0; }
+  .org-item .org-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .org-item .org-type {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(251,191,36,0.12);
+    color: var(--warn);
+    border: 1px solid rgba(251,191,36,0.25);
+    flex-shrink: 0;
+  }
+  .org-item .org-type.full {
+    background: rgba(74,222,128,0.1);
+    color: var(--accent2);
+    border-color: rgba(74,222,128,0.25);
+  }
+  .org-admin-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: all 0.15s;
+    margin-top: 8px;
+    user-select: none;
+  }
+  .org-admin-link:hover { color: var(--text2); background: var(--surface2); }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.visible { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 16px;
+    padding: 32px;
+    width: 100%;
+    max-width: 420px;
+    transform: translateY(16px);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.visible .modal { transform: translateY(0); }
+  .modal-title { font-family: 'Instrument Serif', serif; font-size: 20px; margin-bottom: 6px; }
+  .modal-sub { font-size: 12px; color: var(--text2); margin-bottom: 24px; line-height: 1.6; }
+  .modal-field { margin-bottom: 16px; }
+  .modal-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .modal-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .modal-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,142,255,0.15); }
+  .modal-input.error { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(248,113,113,0.15); }
+  .modal-error { font-size: 12px; color: var(--danger); margin-top: 6px; display: none; }
+  .modal-error.show { display: block; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; }
+
+  /* admin panel */
+  .admin-panel { display: none; }
+  .admin-panel.show { display: block; }
+  .admin-quota {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .admin-quota-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); }
+  .quota-controls { display: flex; align-items: center; gap: 10px; }
+  .quota-btn {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .quota-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .quota-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); min-width: 28px; text-align: center; }
+  .org-manage-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+  }
+  .org-manage-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .org-manage-item > span { flex: 1; font-size: 13px; }
+  .org-manage-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 20px;
+  }
+  .btn-del-org {
+    background: none; border: none;
+    color: var(--text3); cursor: pointer;
+    font-size: 14px; padding: 2px 5px;
+    border-radius: 5px; transition: all 0.15s;
+  }
+  .btn-del-org:hover { color: var(--danger); background: rgba(248,113,113,0.12); }
+  .add-org-row { display: flex; gap: 8px; }
+
+  /* ─── DROP ZONE ─── */
+  #dropzone-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 61px);
+    padding: 40px;
+  }
+  .drop-card {
+    border: 2px dashed var(--border2);
+    border-radius: 20px;
+    padding: 56px 80px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: var(--surface);
+    max-width: 540px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .drop-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(108,142,255,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .drop-card:hover, .drop-card.drag-over {
+    border-color: var(--accent);
+    background: #16162a;
+    transform: translateY(-2px);
+    box-shadow: 0 20px 60px rgba(108,142,255,0.12);
+  }
+  .drop-icon { font-size: 52px; margin-bottom: 20px; display: block; filter: drop-shadow(0 0 20px rgba(108,142,255,0.3)); }
+  .drop-title { font-family: 'Instrument Serif', serif; font-size: 26px; color: var(--text); margin-bottom: 8px; }
+  .drop-sub { font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .drop-sub code {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    background: var(--surface2); padding: 2px 6px; border-radius: 4px; color: var(--accent);
+  }
+  #file-input { display: none; }
+  .btn-upload {
+    margin-top: 28px;
+    padding: 11px 28px;
+    background: var(--accent); color: #fff; border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .btn-upload:hover { background: #859fff; transform: translateY(-1px); }
+  .demo-notice {
+    margin-top: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: rgba(251,191,36,0.07);
+    border: 1px solid rgba(251,191,36,0.22);
+    border-radius: 10px;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    color: var(--warn);
+    line-height: 1.65;
+  }
+  .demo-notice b { display: block; margin-bottom: 2px; font-size: 12px; }
+
+  /* ─── LOADING ─── */
+  #loading-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 61px);
+    gap: 20px;
+  }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text2); }
+
+  /* ─── EDITOR ─── */
+  #editor-screen { display: none; padding: 0; }
+  .editor-toolbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 24px;
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toolbar-info {
+    font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2);
+    flex: 1; display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  .info-pill { display: flex; align-items: center; gap: 6px; }
+  .info-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-income { background: var(--accent2); }
+  .dot-expense { background: var(--danger); }
+  .dot-warn { background: var(--warn); }
+
+  .btn {
+    padding: 8px 18px; border-radius: 8px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.18s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #859fff; }
+  .btn-primary:disabled { background: var(--border2); color: var(--text3); cursor: not-allowed; }
+  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* ─── TABLE ─── */
+  .table-wrapper { overflow-x: auto; max-height: calc(100vh - 125px); overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    position: sticky; top: 0; z-index: 11;
+    background: var(--surface2);
+    padding: 10px; text-align: left;
+    font-family: 'DM Mono', monospace; font-size: 10px;
+    color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.06em; white-space: nowrap; user-select: none;
+  }
+  thead th.col-editable { color: var(--accent); }
+  thead th.col-warn { color: var(--warn); }
+  thead tr.filter-row th { top: 37px !important; z-index: 11 !important; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  tbody tr.row-income { background: rgba(74,222,128,0.04); }
+  tbody tr.row-income:hover { background: rgba(74,222,128,0.07); }
+  tbody tr.row-expense { background: rgba(248,113,113,0.04); }
+  tbody tr.row-expense:hover { background: rgba(248,113,113,0.07); }
+  td {
+    padding: 6px 10px; vertical-align: middle;
+    white-space: nowrap; max-width: 240px;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+  td.td-locked { color: var(--text3); font-family: 'DM Mono', monospace; font-size: 11px; }
+  td.td-bank-account { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); background: rgba(108,142,255,0.06); }
+  td.td-amount { font-family: 'DM Mono', monospace; font-size: 12px; text-align: right; }
+  td.td-amount.income { color: var(--accent2); }
+  td.td-amount.expense { color: var(--danger); }
+
+  .cell-input {
+    background: transparent; border: 1px solid transparent; border-radius: 5px;
+    padding: 3px 6px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    width: 100%; min-width: 110px; transition: all 0.15s; outline: none;
+  }
+  .cell-input:focus { background: var(--surface2); border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,142,255,0.15); }
+  .cell-input.warn { border-color: rgba(251,191,36,0.4); background: rgba(251,191,36,0.05); }
+  .cell-input.warn:focus { border-color: var(--warn); box-shadow: 0 0 0 2px rgba(251,191,36,0.15); }
+  .cell-input.filled { color: var(--text); border-color: transparent; }
+  .cell-input[readonly] { color: var(--accent); cursor: default; background: rgba(108,142,255,0.06); border-color: transparent; }
+
+  .progress-bar-wrap { height: 3px; background: var(--border); }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.4s; }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 14px 20px;
+    font-size: 13px; color: var(--text);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    transform: translateY(20px); opacity: 0;
+    pointer-events: none; transition: all 0.3s;
+    z-index: 999; max-width: 340px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: rgba(74,222,128,0.4); }
+  #toast.error   { border-color: rgba(248,113,113,0.4); }
+
+  /* ─── FILTER ROW ─── */
+  thead tr.filter-row th { background: var(--bg); border-bottom: 2px solid var(--border2); padding: 5px 6px; }
+  .filter-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 4px 8px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 10px; outline: none; transition: all 0.15s; min-width: 60px;
+  }
+  .filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(108,142,255,0.15); }
+  .filter-input::placeholder { color: var(--text3); }
+  .filter-input.active { border-color: var(--accent); background: rgba(108,142,255,0.08); color: var(--accent); }
+  .filter-select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 4px 6px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 10px; outline: none; cursor: pointer; transition: all 0.15s; appearance: none;
+  }
+  .filter-select:focus { border-color: var(--accent); }
+  .filter-select.active { border-color: var(--accent); background: rgba(108,142,255,0.08); color: var(--accent); }
+  .filter-clear {
+    display: none; position: absolute; right: 4px; top: 50%;
+    transform: translateY(-50%); background: none; border: none;
+    color: var(--text3); cursor: pointer; font-size: 11px; padding: 0 2px; line-height: 1;
+  }
+  .filter-clear:hover { color: var(--danger); }
+  .filter-wrap { position: relative; }
+  .filter-wrap.has-value .filter-clear { display: block; }
+  .filter-wrap.has-value .filter-input,
+  .filter-wrap.has-value .filter-select { padding-right: 18px; }
+
+  /* ─── CURRENCY + RATE ─── */
+  .amount-cell-wrap { display: flex; align-items: center; gap: 5px; }
+  .currency-input {
+    width: 54px; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 5px; padding: 3px 6px; color: var(--warn);
+    font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+    text-transform: uppercase; outline: none; transition: all 0.15s; text-align: center;
+  }
+  .currency-input:focus { border-color: var(--warn); box-shadow: 0 0 0 2px rgba(251,191,36,0.15); }
+  .currency-input.loading { opacity: 0.5; pointer-events: none; }
+  .rate-badge { font-family: 'DM Mono', monospace; font-size: 9px; color: var(--text3); white-space: nowrap; min-width: 48px; }
+  .rate-badge.fetched { color: var(--accent2); cursor: pointer; }
+  .rate-badge.fetched:hover { text-decoration: underline dotted; color: var(--accent); }
+  .rate-badge.error { color: var(--danger); }
+  .rate-edit-input {
+    width: 70px; background: var(--surface2); border: 1px solid var(--accent2);
+    border-radius: 5px; padding: 2px 5px; color: var(--accent2);
+    font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500;
+    outline: none; box-shadow: 0 0 0 2px rgba(74,222,128,0.15); text-align: center;
+  }
+
+  /* ─── DELETED ROW ─── */
+  tbody tr.row-deleted { background: rgba(248,113,113,0.08) !important; opacity: 0.55; }
+  tbody tr.row-deleted td { pointer-events: none; }
+  tbody tr.row-deleted input {
+    background: rgba(248,113,113,0.1) !important;
+    color: var(--danger) !important;
+    border-color: rgba(248,113,113,0.3) !important;
+    text-decoration: line-through;
+  }
+  .btn-delete {
+    background: none; border: none; color: var(--text3);
+    cursor: pointer; padding: 3px 5px; border-radius: 5px;
+    font-size: 13px; line-height: 1; transition: all 0.15s; pointer-events: all !important;
+  }
+  .btn-delete:hover { color: var(--danger); background: rgba(248,113,113,0.12); }
+  .btn-delete.active { color: var(--danger); }
+  td.td-delete { width: 32px; text-align: center; padding: 4px; }
+
+  /* ─── DUP WARN ─── */
+  .dup-warn {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 9px; color: var(--danger);
+    font-family: 'DM Mono', monospace; margin-top: 2px;
+  }
+  .cell-dup-wrap { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">FINS <span>·</span> TBC იმპორტი</div>
+  <div class="header-right">
+    <div class="org-badge" id="org-badge" onclick="goToOrgScreen()">
+      <div class="org-dot" id="org-badge-dot"></div>
+      <b id="org-badge-name">—</b>
+      <span style="color:var(--text3);font-size:10px">↩ შეცვლა</span>
+    </div>
+    <div class="header-meta" id="header-meta">
+      ბანკის ამონაწერის კონვერტორი<br>
+      <b>TBC → FINS ფორმატი</b>
+    </div>
+  </div>
+</header>
+
+<!-- ORG SELECT -->
+<div id="org-screen">
+  <div class="org-card">
+    <div class="org-card-title">ორგანიზაციის არჩევა</div>
+    <div class="org-card-sub">
+      აირჩიეთ ორგანიზაცია. პარტნიორების მეხსიერება ინახება ორგანიზაციის ჭრილში დამოუკიდებლად.
+    </div>
+    <div class="org-list" id="org-list"></div>
+    <div class="org-admin-link" onclick="openAdminModal()">⚙ ადმინი · ორგანიზაციების მართვა</div>
+  </div>
+</div>
+
+<!-- DROP ZONE -->
+<div id="dropzone-screen">
+  <div class="drop-card" id="drop-card">
+    <span class="drop-icon">📂</span>
+    <div class="drop-title">TBC ამონაწერი</div>
+    <p class="drop-sub">
+      ჩააგდეთ ან აირჩიეთ TBC-ის <code>.xlsx</code> ბანკის ამონაწერი.<br>
+      პროგრამა დაამუშავებს და გამოგიტანს რედაქტირებად ხედს.
+    </p>
+    <button class="btn-upload" onclick="document.getElementById('file-input').click()">ფაილის არჩევა</button>
+    <input type="file" id="file-input" accept=".xlsx,.xls">
+    <div class="demo-notice" id="demo-notice" style="display:none">
+      <span style="font-size:16px;flex-shrink:0">⚠</span>
+      <div>
+        <b>Demo რეჟიმი — შეზღუდვები</b>
+        მხოლოდ პირველი <b>10 ჩანაწერი</b> ჩაიტვირთება და <b>ექსპორტი გათიშულია</b>. სრული ფუნქციონალისთვის საჭიროა სრული ორგანიზაცია.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">ფაილის დამუშავება...</div>
+</div>
+
+<!-- EDITOR -->
+<div id="editor-screen">
+  <div class="editor-toolbar">
+    <div class="toolbar-info">
+      <div class="info-pill"><div class="dot dot-income"></div><span id="stat-income">— შემოსვლა</span></div>
+      <div class="info-pill"><div class="dot dot-expense"></div><span id="stat-expense">— გასვლა</span></div>
+      <div class="info-pill"><div class="dot dot-warn"></div><span id="stat-missing">— შეუვსებელი</span></div>
+    </div>
+    <button class="btn btn-ghost" onclick="resetToUpload()">← ახალი ფაილი</button>
+    <button class="btn btn-primary" id="export-btn" onclick="doExport()" disabled>⬇ FINS Export</button>
+  </div>
+  <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+  <div class="table-wrapper">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th class="col-locked">თარიღი</th>
+          <th class="col-editable">დოკუმენტი</th>
+          <th class="col-warn">ანგ. დებეტი</th>
+          <th class="col-editable">დებ. დასახელება</th>
+          <th class="col-warn">ანგ. კრედიტი</th>
+          <th class="col-editable">კრედ. დასახელება</th>
+          <th class="col-locked">თანხა</th>
+          <th class="col-editable">ვალუტა / კურსი</th>
+          <th class="col-editable">დანიშნულება</th>
+          <th class="col-locked">პარტნიორი</th>
+          <th class="col-locked">ტიპი</th>
+          <th></th>
+        </tr>
+        <tr class="filter-row">
+          <th><div class="filter-wrap"><input class="filter-input" data-col="0" placeholder="თარიღი..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="1" placeholder="ძებნა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="2" placeholder="ანგარიში..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="3" placeholder="დასახელება..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="4" placeholder="ანგარიში..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="5" placeholder="დასახელება..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="6" placeholder="თანხა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="7" placeholder="ძებნა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="8" placeholder="პარტნიორი..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap">
+            <select class="filter-select" data-col="9" onchange="onFilter(this)">
+              <option value="">ყველა</option>
+              <option value="შემოსვლა">შემოსვლა</option>
+              <option value="გასვლა">გასვლა</option>
+              <option value="შეუვსებელი">შეუვსებელი</option>
+            </select>
+            <button class="filter-clear" onclick="clearFilter(this)">✕</button>
+          </div></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal">
+    <div id="step-pw">
+      <div class="modal-title">🔐 ადმინი</div>
+      <div class="modal-sub">ორგანიზაციების მართვისთვის შეიყვანეთ ადმინის პაროლი.</div>
+      <div class="modal-field">
+        <label class="modal-label">პაროლი</label>
+        <input class="modal-input" id="pw-input" type="password" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter') checkPw()">
+        <div class="modal-error" id="pw-error">პაროლი არასწორია</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closeAdminModal()">გაუქმება</button>
+        <button class="btn btn-primary btn-sm" onclick="checkPw()">შესვლა</button>
+      </div>
+    </div>
+
+    <div id="step-admin" class="admin-panel">
+      <div class="modal-title">⚙ ორგანიზაციები</div>
+      <div class="modal-sub">ლიმიტი — რამდენი სრული ორგანიზაცია შეიძლება დაემატოს.</div>
+
+      <div class="admin-quota">
+        <span class="admin-quota-label">სრული ორგანიზაციების ლიმიტი</span>
+        <div class="quota-controls">
+          <button class="quota-btn" onclick="changeQuota(-1)">−</button>
+          <span class="quota-val" id="quota-val">0</span>
+          <button class="quota-btn" onclick="changeQuota(+1)">+</button>
+        </div>
+      </div>
+
+      <div class="org-manage-list" id="org-manage-list"></div>
+
+      <div class="add-org-row">
+        <input class="modal-input" id="new-org-input" placeholder="ახალი ორგანიზაციის სახელი..."
+          onkeydown="if(event.key==='Enter') addOrg()"
+          style="flex:1;font-size:13px;padding:8px 12px;">
+        <button class="btn btn-primary btn-sm" onclick="addOrg()">+ დამატება</button>
+      </div>
+      <div class="modal-error" id="org-error" style="margin-top:8px"></div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost btn-sm" onclick="closeAdminModal()">დახურვა</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────
+const BANK_ACCOUNT  = '1210/01';
+const BANK_LABEL    = 'TBC GEL';
+const FINS_HEADERS  = ['თარიღი*','დოკუმენტი','ანგ. დებეტი*','დასახელება','ანგ. კრედიტი*','დასახელება','თანხა*','ვალუტა*','კურსი*','რაოდენობა','ერთეული','ერთეულის ფასი','დანიშნულება','ობიექტი*','ზემოქმედი','კავშირი','შექმინს თარიღი'];
+const DEMO_LIMIT    = 10;
+const _AP           = btoa('12345654321'); // admin password check
+
+// ─── STATE ───────────────────────────────────────────────────
+let rows = [];
+let currentOrg = null;
+let accountMemory = {};
+
+// ─── ORG CONFIG ──────────────────────────────────────────────
+function loadCfg() {
+  try { const r = localStorage.getItem('fins_orgs'); if (r) return JSON.parse(r); } catch(e) {}
+  return { quota: 0, orgs: [{ name: 'Demo', isDemo: true }] };
+}
+function saveCfg(cfg) { localStorage.setItem('fins_orgs', JSON.stringify(cfg)); }
+function memKey(name) { return 'fins_mem_' + name.toLowerCase().replace(/\s+/g,'_'); }
+function loadMem(name) { try { const r = localStorage.getItem(memKey(name)); return r ? JSON.parse(r) : {}; } catch(e) { return {}; } }
+function saveMem(name, m) { localStorage.setItem(memKey(name), JSON.stringify(m)); }
+
+// ─── ORG SCREEN ──────────────────────────────────────────────
+function renderOrgScreen() {
+  const cfg = loadCfg();
+  const list = document.getElementById('org-list');
+  list.innerHTML = '';
+  if (!cfg.orgs.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px 0">ორგანიზაცია არ არის — ადმინი → დაამატეთ</div>';
+    return;
+  }
+  cfg.orgs.forEach(org => {
+    const btn = document.createElement('button');
+    btn.className = 'org-item';
+    btn.innerHTML = `
+      <span class="org-icon">${org.isDemo ? '🔬' : '🏢'}</span>
+      <span class="org-name">${esc(org.name)}</span>
+      <span class="org-type ${org.isDemo ? '' : 'full'}">${org.isDemo ? 'Demo' : 'სრული'}</span>
+    `;
+    btn.onclick = () => selectOrg(org);
+    list.appendChild(btn);
+  });
+}
+
+function selectOrg(org) {
+  currentOrg = org;
+  accountMemory = loadMem(org.name);
+  // header badge
+  const badge = document.getElementById('org-badge');
+  badge.style.display = 'flex';
+  document.getElementById('org-badge-dot').className = 'org-dot' + (org.isDemo ? ' demo' : '');
+  document.getElementById('org-badge-name').textContent = org.name;
+  // demo notice
+  document.getElementById('demo-notice').style.display = org.isDemo ? 'flex' : 'none';
+  show('dropzone');
+}
+
+function goToOrgScreen() {
+  rows = [];
+  currentOrg = null;
+  accountMemory = {};
+  document.getElementById('org-badge').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  renderOrgScreen();
+  show('org');
+}
+
+// ─── ADMIN MODAL ─────────────────────────────────────────────
+function openAdminModal() {
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').classList.remove('show');
+  document.getElementById('pw-input').classList.remove('error');
+  document.getElementById('step-pw').style.display = 'block';
+  document.getElementById('step-admin').classList.remove('show');
+  document.getElementById('admin-modal').classList.add('visible');
+  setTimeout(() => document.getElementById('pw-input').focus(), 150);
+}
+function closeAdminModal() { document.getElementById('admin-modal').classList.remove('visible'); }
+document.getElementById('admin-modal').addEventListener('click', function(e) { if (e.target === this) closeAdminModal(); });
+
+function checkPw() {
+  const val = document.getElementById('pw-input').value;
+  if (btoa(val) === _AP) {
+    document.getElementById('step-pw').style.display = 'none';
+    document.getElementById('step-admin').classList.add('show');
+    renderAdminPanel();
+  } else {
+    document.getElementById('pw-error').classList.add('show');
+    document.getElementById('pw-input').classList.add('error');
+    document.getElementById('pw-input').focus();
+  }
+}
+
+function renderAdminPanel() {
+  const cfg = loadCfg();
+  document.getElementById('quota-val').textContent = cfg.quota;
+  const list = document.getElementById('org-manage-list');
+  list.innerHTML = '';
+  cfg.orgs.forEach((org, idx) => {
+    const item = document.createElement('div');
+    item.className = 'org-manage-item';
+    const isDemo = org.isDemo;
+    item.innerHTML = `
+      <span>${esc(org.name)}</span>
+      <span class="org-manage-tag" style="${isDemo
+        ? 'background:rgba(251,191,36,0.12);color:var(--warn);border:1px solid rgba(251,191,36,0.25)'
+        : 'background:rgba(74,222,128,0.1);color:var(--accent2);border:1px solid rgba(74,222,128,0.25)'
+      }">${isDemo ? 'Demo' : 'სრული'}</span>
+      ${isDemo ? '' : `<button class="btn-del-org" onclick="deleteOrg(${idx})" title="წაშლა">🗑</button>`}
+    `;
+    list.appendChild(item);
+  });
+  const errEl = document.getElementById('org-error');
+  errEl.classList.remove('show');
+  errEl.textContent = '';
+}
+
+function changeQuota(d) {
+  const cfg = loadCfg();
+  cfg.quota = Math.max(0, cfg.quota + d);
+  saveCfg(cfg);
+  renderAdminPanel();
+}
+
+function addOrg() {
+  const inp = document.getElementById('new-org-input');
+  const name = inp.value.trim();
+  const errEl = document.getElementById('org-error');
+  const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+
+  if (!name) { showErr('სახელი ცარიელია'); return; }
+
+  const cfg = loadCfg();
+  const fullCount = cfg.orgs.filter(o => !o.isDemo).length;
+
+  if (fullCount >= cfg.quota) {
+    showErr(`ლიმიტი ამოიწურა (${cfg.quota} სრული). გაზარდეთ ლიმიტი ↑`);
+    return;
+  }
+  if (cfg.orgs.some(o => o.name.toLowerCase() === name.toLowerCase())) {
+    showErr('ასეთი სახელი უკვე არსებობს'); return;
+  }
+
+  cfg.orgs.push({ name, isDemo: false });
+  saveCfg(cfg);
+  inp.value = '';
+  errEl.style.display = 'none';
+  renderAdminPanel();
+  renderOrgScreen();
+  toast(`"${name}" დაემატა ✓`, 'success');
+}
+
+function deleteOrg(idx) {
+  const cfg = loadCfg();
+  const org = cfg.orgs[idx];
+  if (!org || org.isDemo) return;
+  if (!confirm(`წაშლა: "${org.name}"?\n\nდაგროვებული მეხსიერებაც წაიშლება!`)) return;
+  localStorage.removeItem(memKey(org.name));
+  cfg.orgs.splice(idx, 1);
+  saveCfg(cfg);
+  renderAdminPanel();
+  renderOrgScreen();
+  toast(`"${org.name}" წაიშალა`, 'error');
+}
+
+// ─── FILE DROP ───────────────────────────────────────────────
+const dropCard = document.getElementById('drop-card');
+dropCard.addEventListener('dragover', e => { e.preventDefault(); dropCard.classList.add('drag-over'); });
+dropCard.addEventListener('dragleave', () => dropCard.classList.remove('drag-over'));
+dropCard.addEventListener('drop', e => {
+  e.preventDefault(); dropCard.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+dropCard.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('file-input').click(); });
+
+// ─── FILE PROCESSING ─────────────────────────────────────────
+function processFile(file) {
+  if (!currentOrg) { toast('ჯერ ორგანიზაცია აირჩიეთ', 'error'); return; }
+  show('loading'); setLoading('ფაილის კითხვა...');
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      setLoading('მონაცემების დამუშავება...');
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const sheetName = wb.SheetNames.find(n => n !== 'Summary') || wb.SheetNames[1];
+      const ws = wb.Sheets[sheetName];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+
+      rows = [];
+      let count = 0;
+      let demoTruncated = false;
+
+      for (let i = 2; i < raw.length; i++) {
+        const r = raw[i];
+        if (!r[0]) continue;
+        const paidOut = parseFloat(r[3]) || 0;
+        const paidIn  = parseFloat(r[4]) || 0;
+        if (paidOut === 0 && paidIn === 0) continue;
+
+        if (currentOrg.isDemo && count >= DEMO_LIMIT) { demoTruncated = true; break; }
+        count++;
+
+        const isIncome   = paidIn > 0;
+        const amount     = isIncome ? paidIn : paidOut;
+        const partner    = (r[10] || '').trim();
+        const partnerTax = (r[11] || '').trim();
+        const partnerAcc = (r[9]  || '').trim();
+        const description= (r[1]  || '').trim();
+        const txId       = (r[22] || r[8] || '').toString().trim();
+        const txType     = (r[6]  || '').trim();
+        const mk         = partnerTax || partnerAcc || partner;
+
+        let danishnuleba = description;
+        if (partner && !description.includes(partner)) danishnuleba += ' | ' + partner;
+
+        const mem         = mk ? accountMemory[mk] : null;
+        const contraAcc   = mem ? mem.contra      : '';
+        const contraLabel = mem ? mem.contraLabel : partner;
+
+        rows.push({
+          date: r[0], txId,
+          debitAcc:    isIncome ? BANK_ACCOUNT : contraAcc,
+          debitLabel:  isIncome ? BANK_LABEL   : contraLabel,
+          creditAcc:   isIncome ? contraAcc    : BANK_ACCOUNT,
+          creditLabel: isIncome ? contraLabel  : BANK_LABEL,
+          amount, currency: 'GEL', rate: 1,
+          danishnuleba, partner, partnerTax, partnerAcc,
+          txType, isIncome, memKey: mk,
+          locked_debit: isIncome, locked_credit: !isIncome,
+        });
+      }
+
+      if (demoTruncated) toast(`Demo: მხოლოდ პირველი ${DEMO_LIMIT} ჩანაწერი ჩაიტვირთა`, 'error');
+
+      setLoading('ცხრილის გენერაცია...');
+      setTimeout(() => { renderTable(); updateMeta(file.name); show('editor'); }, 50);
+    } catch(err) { show('dropzone'); toast('შეცდომა: ' + err.message, 'error'); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ─── RENDER ──────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+  rows.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    tr.className = row.isIncome ? 'row-income' : 'row-expense';
+    tr.dataset.index = i;
+    if (!row.debitAcc || !row.creditAcc) tr.classList.add('row-missing');
+
+    tr.innerHTML = `
+      <td class="td-locked">${formatDate(row.date)}</td>
+      <td>${iCell(i,'txId',row.txId,false,'min-width:120px')}</td>
+      <td class="${row.locked_debit?'td-bank-account':''}">${row.locked_debit?`<input class="cell-input" readonly value="${BANK_ACCOUNT}">`:iCell(i,'debitAcc',row.debitAcc,!row.debitAcc,'min-width:90px')}</td>
+      <td>${row.locked_debit?`<input class="cell-input" readonly value="${BANK_LABEL}">`:iCell(i,'debitLabel',row.debitLabel,false,'min-width:130px')}</td>
+      <td class="${row.locked_credit?'td-bank-account':''}">${row.locked_credit?`<input class="cell-input" readonly value="${BANK_ACCOUNT}">`:iCell(i,'creditAcc',row.creditAcc,!row.creditAcc,'min-width:90px')}</td>
+      <td>${row.locked_credit?`<input class="cell-input" readonly value="${BANK_LABEL}">`:iCell(i,'creditLabel',row.creditLabel,false,'min-width:130px')}</td>
+      <td class="td-amount ${row.isIncome?'income':'expense'}" style="white-space:nowrap">
+        <div class="amount-cell-wrap">
+          <span>${row.isIncome?'+':'-'}${fAmt(row.amount)}</span>
+          <input class="currency-input" data-index="${i}" data-field="currency"
+            value="${row.currency||'GEL'}" onchange="onCurrencyChange(this)"
+            onkeydown="if(event.key==='Enter')this.blur()" maxlength="3" title="ვალუტა">
+          <span class="rate-badge${row.currency&&row.currency!=='GEL'&&row.rate!==1?' fetched':''}"
+            id="rate-${i}" data-index="${i}" onclick="onRateBadgeClick(this)"
+            title="${row.currency&&row.currency!=='GEL'?'კლიკი კურსის სარედაქტირებლად':''}">
+            ${row.currency==='GEL'?'':(row.rate!==1?'×'+row.rate:'—')}
+          </span>
+        </div>
+      </td>
+      <td>${iCell(i,'danishnuleba',row.danishnuleba,false,'min-width:200px;max-width:300px')}</td>
+      <td class="td-locked" title="${esc(row.partner)}">${trunc(row.partner,28)}</td>
+      <td class="td-locked">${badgeType(row.txType)}</td>
+      <td class="td-delete"><button class="btn-delete" onclick="toggleDelete(${i})" title="წაშლა">🗑</button></td>
+    `;
+    if (row.deleted) tr.classList.add('row-deleted');
+    tbody.appendChild(tr);
+  });
+  updateStats();
+  checkDups();
+}
+
+function iCell(i, field, val, warn, style='') {
+  const cls = 'cell-input ' + (warn ? 'warn' : (val ? 'filled' : 'warn'));
+  const v = (val||'').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  return `<input class="${cls}" data-index="${i}" data-field="${field}" value="${v}" style="${style}" onchange="onCellChange(this)" oninput="onCellInput(this)" placeholder="${warn?'⚠ შეავსეთ':'—'}">`;
+}
+
+function onCellInput(el) {
+  el.classList.toggle('warn', !el.value.trim());
+  el.classList.toggle('filled', !!el.value.trim());
+}
+
+function onCellChange(el) {
+  const i = parseInt(el.dataset.index);
+  const field = el.dataset.field;
+  const val = el.value.trim();
+  rows[i][field] = val;
+
+  const row = rows[i];
+  if (row.memKey && row.debitAcc && row.creditAcc) {
+    const contra      = row.locked_debit ? row.creditAcc   : row.debitAcc;
+    const contraLabel = row.locked_debit ? row.creditLabel : row.debitLabel;
+    accountMemory[row.memKey] = { contra, contraLabel };
+    saveMem(currentOrg.name, accountMemory);
+
+    rows.forEach((r, j) => {
+      if (j === i || r.memKey !== row.memKey) return;
+      if (!r.debitAcc || !r.creditAcc) {
+        if (!r.locked_debit  && !r.debitAcc)  { r.debitAcc   = row.debitAcc;   r.debitLabel  = row.debitLabel; }
+        if (!r.locked_credit && !r.creditAcc) { r.creditAcc  = row.creditAcc;  r.creditLabel = row.creditLabel; }
+        const tr = document.querySelector(`tr[data-index="${j}"]`);
+        if (tr) ['debitAcc','debitLabel','creditAcc','creditLabel'].forEach(f => {
+          const inp = tr.querySelector(`[data-field="${f}"]`);
+          if (inp && rows[j][f] !== inp.value) { inp.value = rows[j][f]; inp.classList.remove('warn'); inp.classList.add('filled'); }
+        });
+      }
+    });
+  }
+  updateStats(); checkDups();
+}
+
+// ─── DELETE ──────────────────────────────────────────────────
+function toggleDelete(i) {
+  rows[i].deleted = !rows[i].deleted;
+  const tr = document.querySelector(`tr[data-index="${i}"]`);
+  if (!tr) return;
+  tr.classList.toggle('row-deleted', rows[i].deleted);
+  const btn = tr.querySelector('.btn-delete');
+  if (btn) { btn.textContent = rows[i].deleted ? '↩' : '🗑'; btn.classList.toggle('active', rows[i].deleted); btn.style.pointerEvents='all'; }
+  tr.querySelectorAll('td:not(.td-delete)').forEach(td => { td.style.pointerEvents = rows[i].deleted ? 'none' : ''; });
+  updateStats();
+}
+
+// ─── DUPS ─────────────────────────────────────────────────────
+function checkDups() {
+  const accMap = {};
+  rows.forEach(row => {
+    if (row.deleted) return;
+    const c = row.locked_debit ? row.creditAcc : row.debitAcc;
+    if (!c || c === BANK_ACCOUNT) return;
+    if (!accMap[c]) accMap[c] = new Set();
+    accMap[c].add(row.memKey || '__');
+  });
+  rows.forEach(row => {
+    if (row.deleted) return;
+    const c = row.locked_debit ? row.creditAcc : row.debitAcc;
+    if (!c || c === BANK_ACCOUNT) { row._dupWarn = false; return; }
+    row._dupWarn = accMap[c] && accMap[c].size > 1;
+  });
+  document.querySelectorAll('#table-body tr').forEach(tr => {
+    const i = parseInt(tr.dataset.index); const row = rows[i]; if (!row) return;
+    const cField = row.locked_debit ? 'creditAcc' : 'debitAcc';
+    const inp = tr.querySelector(`[data-field="${cField}"]`); if (!inp) return;
+    let wrap = inp.closest('.cell-dup-wrap');
+    if (!wrap) { wrap = document.createElement('div'); wrap.className = 'cell-dup-wrap'; inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp); }
+    let wEl = wrap.querySelector('.dup-warn');
+    if (row._dupWarn) {
+      if (!wEl) { wEl = document.createElement('span'); wEl.className = 'dup-warn'; wEl.textContent = '⚠ სხვა პარტნიორსაც აქვს ეს ანგარიში'; wrap.appendChild(wEl); }
+      inp.style.borderColor = 'rgba(248,113,113,0.6)';
+    } else { if (wEl) wEl.remove(); if (inp.classList.contains('filled')) inp.style.borderColor = ''; }
+  });
+}
+
+// ─── STATS ───────────────────────────────────────────────────
+function updateStats() {
+  const active  = rows.filter(r => !r.deleted);
+  const income  = active.filter(r => r.isIncome).length;
+  const expense = active.filter(r => !r.isIncome).length;
+  const missing = active.filter(r => !r.debitAcc || !r.creditAcc).length;
+  document.getElementById('stat-income').textContent  = income  + ' შემოსვლა';
+  document.getElementById('stat-expense').textContent = expense + ' გასვლა';
+  document.getElementById('stat-missing').textContent = missing + ' შეუვსებელი';
+  const pct = active.length ? Math.round((active.length - missing) / active.length * 100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+
+  const btn = document.getElementById('export-btn');
+  if (currentOrg && currentOrg.isDemo) {
+    btn.disabled = true;
+    btn.title = 'Demo რეჟიმში ექსპორტი გათიშულია';
+  } else {
+    btn.disabled = missing > 0;
+    btn.title = '';
+  }
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────
+function doExport() {
+  if (currentOrg && currentOrg.isDemo) { toast('Demo რეჟიმში ექსპორტი შეუძლებელია', 'error'); return; }
+  const missing = rows.filter(r => !r.deleted && (!r.debitAcc || !r.creditAcc)).length;
+  if (missing > 0) { toast(missing + ' სტრიქონს აქვს შეუვსებელი ანგარიში', 'error'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const data = [FINS_HEADERS];
+  rows.filter(r => !r.deleted).forEach(row => {
+    data.push([row.date,row.txId,row.debitAcc,row.debitLabel,row.creditAcc,row.creditLabel,row.amount,row.currency||'GEL',row.rate||1,0,'','',row.danishnuleba,'','','','']);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [14,18,13,22,13,22,12,8,7,8,8,10,45,12,10,10,14].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+  const slug = currentOrg.name.replace(/\s+/g,'_');
+  XLSX.writeFile(wb, `FINS_TBC_${slug}.xlsx`);
+  toast('წარმატებით გადმოწერილია ✓', 'success');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────
+function formatDate(d) {
+  if (!d) return '';
+  if (typeof d === 'string') return d.slice(0,10);
+  return new Date(d).toLocaleDateString('ka-GE',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fAmt(n) { return Number(n).toLocaleString('ka-GE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function trunc(str, n) { return (str||'').length > n ? str.slice(0,n)+'…' : (str||''); }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function badgeType(t) {
+  if (!t) return '';
+  const bg = {'შემოსავალი':'#1a3a2a','საბიუჯეტო გადარიცხვები':'#2a2a1a','სხვა ხარჯები':'#2a1a2a','კომუნალური, მობილური, ჯარიმები':'#2a1a1a'}[t]||'#1e1e27';
+  return `<span style="font-size:9px;padding:2px 7px;border-radius:20px;background:${bg};color:var(--text2);font-family:'DM Mono',monospace;white-space:nowrap">${trunc(t,22)}</span>`;
+}
+function show(s) {
+  document.getElementById('org-screen').style.display      = s==='org'      ? 'flex'  : 'none';
+  document.getElementById('dropzone-screen').style.display = s==='dropzone' ? 'flex'  : 'none';
+  document.getElementById('loading-screen').style.display  = s==='loading'  ? 'flex'  : 'none';
+  document.getElementById('editor-screen').style.display   = s==='editor'   ? 'block' : 'none';
+}
+function setLoading(msg) { document.getElementById('loading-text').textContent = msg; }
+function updateMeta(filename) {
+  document.getElementById('header-meta').innerHTML = `<b>${esc(filename)}</b><br>${rows.length} ტრანზაქცია · ${esc(currentOrg.name)}`;
+}
+function resetToUpload() { rows = []; document.getElementById('file-input').value = ''; show('dropzone'); }
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (type ? ' '+type : '');
+  setTimeout(() => el.className='', 3500);
+}
+
+// ─── NBG RATE ────────────────────────────────────────────────
+const nbgCache = {};
+function getDateStr(d) {
+  if (!d) return '';
+  if (typeof d === 'string') return d.slice(0,10);
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+async function fetchNbgRate(currency, dateStr) {
+  const k = `${currency}_${dateStr}`;
+  if (nbgCache[k] !== undefined) return nbgCache[k];
+  try {
+    const resp = await fetch(`https://nbg.gov.ge/gw/api/ct/monetarypolicy/currencies/ka/json/?currencies=${currency}&date=${dateStr}`);
+    if (!resp.ok) throw 0;
+    const json = await resp.json();
+    const rate = json[0]?.currencies?.[0]?.rate;
+    if (!rate) throw 0;
+    return (nbgCache[k] = rate);
+  } catch(e) { return (nbgCache[k] = null); }
+}
+
+function onRateBadgeClick(badge) {
+  const i = parseInt(badge.dataset.index); const row = rows[i];
+  if (!row.currency || row.currency === 'GEL') return;
+  if (badge.querySelector('.rate-edit-input')) return;
+  const cur = row.rate && row.rate !== 1 ? row.rate : '';
+  const inp = document.createElement('input');
+  inp.className = 'rate-edit-input'; inp.type='text'; inp.value=cur; inp.placeholder='2.7134';
+  badge.textContent=''; badge.appendChild(inp); inp.focus(); inp.select();
+  function commit() {
+    const v = parseFloat(inp.value.replace(',','.'));
+    if (!isNaN(v) && v > 0) { rows[i].rate=v; badge.className='rate-badge fetched'; badge.textContent='×'+v; toast(row.currency+' კურსი: ×'+v,'success'); }
+    else { badge.textContent=cur?'×'+cur:'⚠ ვერ მოიძებნა'; badge.className=cur?'rate-badge fetched':'rate-badge error'; }
+  }
+  inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){inp.value=cur;inp.blur();} });
+  inp.addEventListener('blur',commit);
+}
+
+async function onCurrencyChange(el) {
+  const i = parseInt(el.dataset.index);
+  const cur = el.value.trim().toUpperCase(); el.value=cur; rows[i].currency=cur;
+  const rb = document.getElementById('rate-'+i);
+  if (!cur || cur==='GEL') { rows[i].rate=1; if(rb){rb.textContent='';rb.className='rate-badge';} return; }
+  el.classList.add('loading'); if(rb){rb.textContent='...';rb.className='rate-badge';}
+  const rate = await fetchNbgRate(cur, getDateStr(rows[i].date));
+  el.classList.remove('loading');
+  if (rate) { rows[i].rate=rate; if(rb){rb.textContent='×'+rate;rb.className='rate-badge fetched';} toast(cur+' '+getDateStr(rows[i].date)+': '+rate+' ₾','success'); }
+  else { rows[i].rate=1; if(rb){rb.textContent='⚠ ვერ მოიძებნა';rb.className='rate-badge error';} toast(cur+' კურსი ვერ მოიძებნა','error'); }
+}
+
+// ─── FILTERS ─────────────────────────────────────────────────
+let activeFilters = {};
+function onFilter(el) {
+  const col=el.dataset.col, val=el.value.trim();
+  activeFilters[col]=val;
+  el.closest('.filter-wrap').classList.toggle('has-value',!!val);
+  el.classList.toggle('active',!!val);
+  applyFilters();
+}
+function clearFilter(btn) {
+  const wrap=btn.closest('.filter-wrap'), inp=wrap.querySelector('.filter-input,.filter-select');
+  inp.value=''; wrap.classList.remove('has-value'); inp.classList.remove('active');
+  delete activeFilters[inp.dataset.col]; applyFilters();
+}
+function rowTxt(row,col) {
+  switch(parseInt(col)) {
+    case 0: return formatDate(row.date);
+    case 1: return (row.txId||'').toString();
+    case 2: return row.debitAcc||'';
+    case 3: return row.debitLabel||'';
+    case 4: return row.creditAcc||'';
+    case 5: return row.creditLabel||'';
+    case 6: return fAmt(row.amount);
+    case 7: return row.danishnuleba||'';
+    case 8: return row.partner||'';
+    default: return '';
+  }
+}
+function applyFilters() {
+  document.querySelectorAll('#table-body tr').forEach(tr => {
+    const i=parseInt(tr.dataset.index), row=rows[i]; let ok=true;
+    for (const [col,val] of Object.entries(activeFilters)) {
+      if (!val) continue;
+      if (col==='9') {
+        if (val==='შემოსვლა' && !row.isIncome)                { ok=false; break; }
+        if (val==='გასვლა'   &&  row.isIncome)                 { ok=false; break; }
+        if (val==='შეუვსებელი' && row.debitAcc && row.creditAcc) { ok=false; break; }
+      } else { if (!rowTxt(row,col).toLowerCase().includes(val.toLowerCase())) { ok=false; break; } }
+    }
+    tr.style.display = ok ? '' : 'none';
+  });
+}
+
+// ─── INIT ────────────────────────────────────────────────────
+renderOrgScreen();
+show('org');
+</script>
+</body>
+</html>
