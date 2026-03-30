@@ -347,6 +347,32 @@
     cursor: pointer; transition: all 0.2s;
   }
   .btn-upload:hover { background: #859fff; transform: translateY(-1px); }
+
+  .ref-upload-section {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-ref-upload {
+    padding: 7px 18px;
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-ref-upload:hover { border-color: var(--accent); color: var(--text); }
+  .ref-info {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+
   .demo-notice {
     margin-top: 20px;
     display: flex;
@@ -607,6 +633,11 @@
     </p>
     <button class="btn-upload" onclick="const fi=document.getElementById('file-input');fi.value='';fi.click()">ფაილის არჩევა</button>
     <input type="file" id="file-input" accept=".xlsx,.xls" onclick="this.value=''">
+    <div class="ref-upload-section" id="ref-section">
+      <button class="btn-ref-upload" onclick="event.stopPropagation(); document.getElementById('ref-file-input').click()">დებიტორ/კრედიტორების იმპორტი</button>
+      <input type="file" id="ref-file-input" accept=".xlsx,.xls" style="display:none">
+      <div class="ref-info" id="ref-info" style="display:none"></div>
+    </div>
     <div class="demo-notice" id="demo-notice" style="display:none">
       <span style="font-size:16px;flex-shrink:0">⚠</span>
       <div>
@@ -749,6 +780,7 @@ const _AP           = btoa('12345654321'); // admin password check
 let rows = [];
 let currentOrg = null;
 let accountMemory = {};
+let refData = { debtors: {}, creditors: {}, meta: null };
 
 // ─── ORG CONFIG ──────────────────────────────────────────────
 function loadCfg() {
@@ -759,6 +791,19 @@ function saveCfg(cfg) { localStorage.setItem('fins_orgs', JSON.stringify(cfg)); 
 function memKey(name) { return 'fins_mem_' + name.toLowerCase().replace(/\s+/g,'_'); }
 function loadMem(name) { try { const r = localStorage.getItem(memKey(name)); return r ? JSON.parse(r) : {}; } catch(e) { return {}; } }
 function saveMem(name, m) { localStorage.setItem(memKey(name), JSON.stringify(m)); }
+function refKey(name) { return 'fins_ref_' + name.toLowerCase().replace(/\s+/g,'_'); }
+function loadRef(name) { try { const r = localStorage.getItem(refKey(name)); return r ? JSON.parse(r) : { debtors: {}, creditors: {}, meta: null }; } catch(e) { return { debtors: {}, creditors: {}, meta: null }; } }
+function saveRef(name, data) { localStorage.setItem(refKey(name), JSON.stringify(data)); }
+function updateRefInfo() {
+  const el = document.getElementById('ref-info');
+  if (!el) return;
+  if (refData.meta) {
+    el.textContent = refData.meta.filename + ' · ' + refData.meta.time;
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
 
 // ─── ORG SCREEN ──────────────────────────────────────────────
 function renderOrgScreen() {
@@ -785,6 +830,8 @@ function renderOrgScreen() {
 function selectOrg(org) {
   currentOrg = org;
   accountMemory = loadMem(org.name);
+  refData = loadRef(org.name);
+  updateRefInfo();
   // header badge
   const badge = document.getElementById('org-badge');
   badge.style.display = 'flex';
@@ -799,6 +846,7 @@ function goToOrgScreen() {
   rows = [];
   currentOrg = null;
   accountMemory = {};
+  refData = { debtors: {}, creditors: {}, meta: null };
   document.getElementById('org-badge').style.display = 'none';
   document.getElementById('file-input').value = '';
   renderOrgScreen();
@@ -896,6 +944,7 @@ function deleteOrg(idx) {
   if (!org || org.isDemo) return;
   if (!confirm(`წაშლა: "${org.name}"?\n\nდაგროვებული მეხსიერებაც წაიშლება!`)) return;
   localStorage.removeItem(memKey(org.name));
+  localStorage.removeItem(refKey(org.name));
   cfg.orgs.splice(idx, 1);
   saveCfg(cfg);
   renderAdminPanel();
@@ -914,6 +963,58 @@ dropCard.addEventListener('drop', e => {
 });
 document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
 dropCard.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('file-input').click(); });
+
+// ─── REFERENCE FILE (DEBTOR/CREDITOR) ───────────────────────
+document.getElementById('ref-file-input').addEventListener('change', e => { if (e.target.files[0]) processRefFile(e.target.files[0]); });
+
+function processRefFile(file) {
+  if (!currentOrg) { toast('ჯერ ორგანიზაცია აირჩიეთ', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const debtorSheet = wb.SheetNames.find(n => n.includes('დებიტორ'));
+      const creditorSheet = wb.SheetNames.find(n => n.includes('კრედიტორ'));
+
+      const debtors = {};
+      const creditors = {};
+
+      if (debtorSheet) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[debtorSheet], { header: 1, defval: '' });
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          const taxId = String(r[2] || '').trim();
+          if (!taxId) continue;
+          debtors[taxId] = { acc: String(r[0] || '').trim(), name: String(r[1] || '').trim() };
+        }
+      }
+
+      if (creditorSheet) {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[creditorSheet], { header: 1, defval: '' });
+        for (let i = 1; i < rows.length; i++) {
+          const r = rows[i];
+          const taxId = String(r[2] || '').trim();
+          if (!taxId) continue;
+          creditors[taxId] = { acc: String(r[0] || '').trim(), name: String(r[1] || '').trim() };
+        }
+      }
+
+      const now = new Date();
+      const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+      refData = { debtors, creditors, meta: { filename: file.name, time } };
+      saveRef(currentOrg.name, refData);
+      updateRefInfo();
+
+      const dCnt = Object.keys(debtors).length;
+      const cCnt = Object.keys(creditors).length;
+      toast(`ცნობარი ჩაიტვირთა: ${dCnt} დებიტორი, ${cCnt} კრედიტორი ✓`, 'success');
+    } catch(err) {
+      toast('შეცდომა: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  document.getElementById('ref-file-input').value = '';
+}
 
 // ─── FILE PROCESSING ─────────────────────────────────────────
 function processFile(file) {
@@ -955,8 +1056,25 @@ function processFile(file) {
         const addDesc      = (r[21] || '').trim();
         const danishnuleba = description.includes('გადასახადების ერთიანი კოდი') && addDesc ? addDesc : description;
 
-        const contraAcc   = '';
-        const contraLabel = partner;
+        let contraAcc   = '';
+        let contraLabel = partner;
+
+        // Reference Excel lookup by partnerTax
+        if (partnerTax) {
+          if (!isIncome && refData.creditors[partnerTax]) {
+            contraAcc   = refData.creditors[partnerTax].acc;
+            contraLabel = refData.creditors[partnerTax].name;
+          } else if (isIncome && refData.debtors[partnerTax]) {
+            contraAcc   = refData.debtors[partnerTax].acc;
+            contraLabel = refData.debtors[partnerTax].name;
+          }
+        }
+
+        // Fallback to accountMemory
+        if (!contraAcc && mk && accountMemory[mk]) {
+          contraAcc   = accountMemory[mk].contra;
+          contraLabel = accountMemory[mk].contraLabel || contraLabel;
+        }
 
         rows.push({
           date: r[0], txId,
