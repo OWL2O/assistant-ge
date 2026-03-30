@@ -373,6 +373,19 @@
     color: var(--text3);
   }
 
+  .bank-acc-edit {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    width: 64px;
+    outline: none;
+    padding: 1px 2px;
+  }
+  .bank-acc-edit:focus { border-bottom-color: var(--accent); color: var(--text); }
+
   .demo-notice {
     margin-top: 20px;
     display: flex;
@@ -661,6 +674,13 @@
       <div class="info-pill"><div class="dot dot-income"></div><span id="stat-income">— შემოსვლა</span></div>
       <div class="info-pill"><div class="dot dot-expense"></div><span id="stat-expense">— გასვლა</span></div>
       <div class="info-pill"><div class="dot dot-warn"></div><span id="stat-missing">— შეუვსებელი</span></div>
+      <div class="info-pill" style="margin-left:12px;border-left:1px solid var(--border);padding-left:12px;gap:5px">
+        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">ანგ.:</span>
+        <input id="bank-acc-input" class="bank-acc-edit" value="1210/01"
+          onchange="onBankAccChange(this.value.trim())"
+          onkeydown="if(event.key==='Enter')this.blur()"
+          title="მიმდინარე ანგარიში (ორგანიზაციის ჭრილში ინახება)">
+      </div>
     </div>
     <button class="btn btn-ghost" onclick="resetToUpload()">← ახალი ფაილი</button>
     <div id="toolbar-filename" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:none"></div>
@@ -770,7 +790,7 @@
 
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
-const BANK_ACCOUNT  = '1210/01';
+let bankAccount     = '1210/01';
 const BANK_LABEL    = 'TBC GEL';
 const FINS_HEADERS  = ['თარიღი*','დოკუმენტი','ანგ. დებეტი*','დასახელება','ანგ. კრედიტი*','დასახელება','თანხა*','ვალუტა*','კურსი*','რაოდენობა','ერთეული','ერთეულის ფასი','დანიშნულება','ობიექტი*','ზემოქმედი','კავშირი','შექმინს თარიღი'];
 const DEMO_LIMIT    = 10;
@@ -794,6 +814,9 @@ function saveMem(name, m) { localStorage.setItem(memKey(name), JSON.stringify(m)
 function refKey(name) { return 'fins_ref_' + name.toLowerCase().replace(/\s+/g,'_'); }
 function loadRef(name) { try { const r = localStorage.getItem(refKey(name)); return r ? JSON.parse(r) : { debtors: {}, creditors: {}, meta: null }; } catch(e) { return { debtors: {}, creditors: {}, meta: null }; } }
 function saveRef(name, data) { localStorage.setItem(refKey(name), JSON.stringify(data)); }
+function cfgKey(name) { return 'fins_cfg_' + name.toLowerCase().replace(/\s+/g,'_'); }
+function loadCfgOrg(name) { try { const r = localStorage.getItem(cfgKey(name)); return r ? JSON.parse(r) : {}; } catch(e) { return {}; } }
+function saveCfgOrg(name, data) { localStorage.setItem(cfgKey(name), JSON.stringify(data)); }
 function updateRefInfo() {
   const el = document.getElementById('ref-info');
   if (!el) return;
@@ -832,6 +855,10 @@ function selectOrg(org) {
   accountMemory = loadMem(org.name);
   refData = loadRef(org.name);
   updateRefInfo();
+  const orgCfg = loadCfgOrg(org.name);
+  bankAccount = orgCfg.bankAccount || '1210/01';
+  const baInp = document.getElementById('bank-acc-input');
+  if (baInp) baInp.value = bankAccount;
   // header badge
   const badge = document.getElementById('org-badge');
   badge.style.display = 'flex';
@@ -945,6 +972,7 @@ function deleteOrg(idx) {
   if (!confirm(`წაშლა: "${org.name}"?\n\nდაგროვებული მეხსიერებაც წაიშლება!`)) return;
   localStorage.removeItem(memKey(org.name));
   localStorage.removeItem(refKey(org.name));
+  localStorage.removeItem(cfgKey(org.name));
   cfg.orgs.splice(idx, 1);
   saveCfg(cfg);
   renderAdminPanel();
@@ -962,7 +990,11 @@ dropCard.addEventListener('drop', e => {
   if (file) processFile(file);
 });
 document.getElementById('file-input').addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
-dropCard.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') document.getElementById('file-input').click(); });
+dropCard.addEventListener('click', e => {
+  if (e.target.tagName === 'BUTTON') return;
+  if (e.target.closest && e.target.closest('#ref-section')) return;
+  document.getElementById('file-input').click();
+});
 
 // ─── REFERENCE FILE (DEBTOR/CREDITOR) ───────────────────────
 document.getElementById('ref-file-input').addEventListener('change', e => { if (e.target.files[0]) processRefFile(e.target.files[0]); });
@@ -1078,9 +1110,9 @@ function processFile(file) {
 
         rows.push({
           date: r[0], txId,
-          debitAcc:    isIncome ? BANK_ACCOUNT : contraAcc,
+          debitAcc:    isIncome ? bankAccount : contraAcc,
           debitLabel:  isIncome ? BANK_LABEL   : contraLabel,
-          creditAcc:   isIncome ? contraAcc    : BANK_ACCOUNT,
+          creditAcc:   isIncome ? contraAcc    : bankAccount,
           creditLabel: isIncome ? contraLabel  : BANK_LABEL,
           amount, currency: 'GEL', rate: 1,
           danishnuleba,
@@ -1112,9 +1144,9 @@ function renderTable() {
     tr.innerHTML = `
       <td class="td-locked" style="min-width:82px">${formatDate(row.date)}</td>
       <td style="min-width:60px">${iCell(i,'txId',row.txId,false,'min-width:60px')}</td>
-      <td class="${row.locked_debit?'td-bank-account':''}" style="min-width:70px">${row.locked_debit?`<input class="cell-input" readonly value="${BANK_ACCOUNT}">`:iCell(i,'debitAcc',row.debitAcc,!row.debitAcc,'min-width:70px')}</td>
+      <td class="${row.locked_debit?'td-bank-account':''}" style="min-width:70px">${row.locked_debit?`<input class="cell-input" readonly value="${bankAccount}">`:iCell(i,'debitAcc',row.debitAcc,!row.debitAcc,'min-width:70px')}</td>
       <td style="min-width:80px">${row.locked_debit?`<input class="cell-input" readonly value="${BANK_LABEL}">`:iCell(i,'debitLabel',row.debitLabel,false,'min-width:80px')}</td>
-      <td class="${row.locked_credit?'td-bank-account':''}" style="min-width:70px">${row.locked_credit?`<input class="cell-input" readonly value="${BANK_ACCOUNT}">`:iCell(i,'creditAcc',row.creditAcc,!row.creditAcc,'min-width:70px')}</td>
+      <td class="${row.locked_credit?'td-bank-account':''}" style="min-width:70px">${row.locked_credit?`<input class="cell-input" readonly value="${bankAccount}">`:iCell(i,'creditAcc',row.creditAcc,!row.creditAcc,'min-width:70px')}</td>
       <td style="min-width:80px">${row.locked_credit?`<input class="cell-input" readonly value="${BANK_LABEL}">`:iCell(i,'creditLabel',row.creditLabel,false,'min-width:80px')}</td>
       <td style="white-space:nowrap;min-width:70px">
         <div class="amount-cell-wrap">
@@ -1199,14 +1231,14 @@ function checkDups() {
   rows.forEach(row => {
     if (row.deleted) return;
     const c = row.locked_debit ? row.creditAcc : row.debitAcc;
-    if (!c || c === BANK_ACCOUNT) return;
+    if (!c || c === bankAccount) return;
     if (!accMap[c]) accMap[c] = new Set();
     accMap[c].add(row.memKey || '__');
   });
   rows.forEach(row => {
     if (row.deleted) return;
     const c = row.locked_debit ? row.creditAcc : row.debitAcc;
-    if (!c || c === BANK_ACCOUNT) { row._dupWarn = false; return; }
+    if (!c || c === bankAccount) { row._dupWarn = false; return; }
     row._dupWarn = accMap[c] && accMap[c].size > 1;
   });
   document.querySelectorAll('#table-body tr').forEach(tr => {
@@ -1263,7 +1295,7 @@ function doExport(fmt) {
 
   const slug = currentOrg.name.replace(/\s+/g,'_');
   const exportRows = rows.filter(r => !r.deleted).map(row =>
-    [row.date,row.txId||'',row.debitAcc,row.debitLabel,row.creditAcc,row.creditLabel,
+    [fmtExportDate(row.date),row.txId||'',row.debitAcc,row.debitLabel,row.creditAcc,row.creditLabel,
      row.amount,row.currency||'GEL',row.rate||1,0,'','',row.danishnuleba,'','','','']
   );
 
@@ -1286,6 +1318,15 @@ function doExport(fmt) {
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────
+function fmtExportDate(d) {
+  if (!d) return '';
+  const dt = (d instanceof Date) ? d : new Date(d);
+  if (isNaN(dt)) return String(d);
+  const dd = String(dt.getDate()).padStart(2,'0');
+  const mm = String(dt.getMonth()+1).padStart(2,'0');
+  const yyyy = dt.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
+}
 function formatDate(d) {
   if (!d) return '';
   if (typeof d === 'string') return d.slice(0,10);
@@ -1344,6 +1385,15 @@ async function fetchNbgRate(currency, dateStr) {
     if (!rate) throw 0;
     return (nbgCache[k] = rate);
   } catch(e) { return (nbgCache[k] = null); }
+}
+
+function onBankAccChange(val) {
+  if (!val || !currentOrg) return;
+  bankAccount = val;
+  const orgCfg = loadCfgOrg(currentOrg.name);
+  orgCfg.bankAccount = val;
+  saveCfgOrg(currentOrg.name, orgCfg);
+  document.querySelectorAll('.td-bank-account input[readonly]').forEach(inp => inp.value = val);
 }
 
 function onRateBadgeClick(badge) {
