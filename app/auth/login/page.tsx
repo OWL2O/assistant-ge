@@ -31,21 +31,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
-      <div className="card-glow" />
-
-      <h2 style={{ fontFamily: 'Instrument Serif, serif', fontSize: '22px', marginBottom: '6px' }}>
+    <div className="card fade-in">
+      <h2 style={{
+        fontFamily: 'Instrument Serif, serif', fontSize: '24px',
+        marginBottom: '4px', letterSpacing: '-0.3px',
+      }}>
         შესვლა
       </h2>
-      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '28px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '32px' }}>
         სისტემაში შესასვლელად შეიყვანეთ თქვენი მონაცემები
       </p>
 
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text2)', marginBottom: '6px', fontFamily: 'DM Mono, monospace' }}>
-            ელ-ფოსტა
-          </label>
+          <label style={labelStyle}>ელ-ფოსტა</label>
           <input
             className={`input ${error ? 'error' : ''}`}
             type="email"
@@ -58,9 +57,7 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text2)', marginBottom: '6px', fontFamily: 'DM Mono, monospace' }}>
-            პაროლი
-          </label>
+          <label style={labelStyle}>პაროლი</label>
           <input
             className={`input ${error ? 'error' : ''}`}
             type="password"
@@ -72,27 +69,41 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div style={{ fontSize: '13px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px' }}>
+          <div style={{
+            fontSize: '13px', color: 'var(--danger)',
+            padding: '12px 16px',
+            background: 'rgba(251,113,133,0.06)',
+            border: '1px solid rgba(251,113,133,0.15)',
+            borderRadius: 'var(--radius-sm)',
+          }}>
             {error}
           </div>
         )}
 
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-lg"
           type="submit"
           disabled={loading}
-          style={{ marginTop: '8px', justifyContent: 'center' }}
+          style={{ justifyContent: 'center', marginTop: '4px' }}
         >
-          {loading ? 'შესვლა...' : 'შესვლა →'}
+          {loading ? 'შესვლა...' : 'შესვლა'}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)', marginTop: '24px' }}>
+      <div className="divider" style={{ margin: '28px 0' }} />
+
+      <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)' }}>
         ანგარიში არ გაქვთ?{' '}
-        <Link href="/auth/register" style={{ color: 'var(--accent)' }}>
+        <Link href="/auth/register" style={{ color: 'var(--accent)', fontWeight: 500 }}>
           რეგისტრაცია
         </Link>
       </p>
     </div>
   )
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: '12px', color: 'var(--text2)',
+  marginBottom: '8px', fontFamily: 'DM Mono, monospace',
+  textTransform: 'uppercase', letterSpacing: '0.04em',
 }

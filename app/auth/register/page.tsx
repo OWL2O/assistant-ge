@@ -34,7 +34,11 @@ export default function RegisterPage() {
     })
 
     if (error) {
-      setError(error.message)
+      if (error.message.toLowerCase().includes('already registered')) {
+        setError('ეს ელ-ფოსტა უკვე დარეგისტრირებულია')
+      } else {
+        setError('დარეგისტრირება ვერ მოხერხდა. სცადეთ ხელახლა.')
+      }
       setLoading(false)
       return
     }
@@ -44,19 +48,32 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="card" style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>📧</div>
-        <h2 style={{ fontFamily: 'Instrument Serif, serif', fontSize: '22px', marginBottom: '10px' }}>
+      <div className="card fade-in" style={{ textAlign: 'center' }}>
+        <div style={{
+          width: '56px', height: '56px', borderRadius: '50%',
+          background: 'linear-gradient(135deg, rgba(129,140,248,0.15), rgba(129,140,248,0.05))',
+          border: '1px solid rgba(129,140,248,0.2)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 24px',
+          fontSize: '24px', color: 'var(--accent)',
+        }}>
+          ✉
+        </div>
+        <h2 style={{
+          fontFamily: 'Instrument Serif, serif', fontSize: '24px',
+          marginBottom: '12px', letterSpacing: '-0.3px',
+        }}>
           გთხოვთ დაადასტურეთ მეილი
         </h2>
-        <p style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.7 }}>
-          გამოგიგზავნეთ დადასტურების ლინკი <b style={{ color: 'var(--text)' }}>{email}</b>-ზე.
+        <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.7 }}>
+          გამოგიგზავნეთ დადასტურების ლინკი{' '}
+          <b style={{ color: 'var(--text)' }}>{email}</b>-ზე.
           შეამოწმეთ inbox (ან spam).
         </p>
-        <p style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '16px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '12px' }}>
           დადასტურების შემდეგ შეგიძლიათ შეხვიდეთ სისტემაში.
         </p>
-        <Link href="/auth/login" className="btn btn-ghost" style={{ marginTop: '24px', display: 'inline-flex' }}>
+        <Link href="/auth/login" className="btn btn-ghost" style={{ marginTop: '28px', display: 'inline-flex' }}>
           ← შესვლის გვერდი
         </Link>
       </div>
@@ -64,21 +81,20 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="card" style={{ position: 'relative', overflow: 'hidden' }}>
-      <div className="card-glow" />
-
-      <h2 style={{ fontFamily: 'Instrument Serif, serif', fontSize: '22px', marginBottom: '6px' }}>
+    <div className="card fade-in">
+      <h2 style={{
+        fontFamily: 'Instrument Serif, serif', fontSize: '24px',
+        marginBottom: '4px', letterSpacing: '-0.3px',
+      }}>
         რეგისტრაცია
       </h2>
-      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '28px' }}>
+      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '32px' }}>
         შექმენით ანგარიში ASSISTANT.ge-ზე
       </p>
 
-      <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
-          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text2)', marginBottom: '6px', fontFamily: 'DM Mono, monospace' }}>
-            სახელი და გვარი
-          </label>
+          <label style={labelStyle}>სახელი და გვარი</label>
           <input
             className="input"
             type="text"
@@ -90,11 +106,9 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text2)', marginBottom: '6px', fontFamily: 'DM Mono, monospace' }}>
-            ელ-ფოსტა
-          </label>
+          <label style={labelStyle}>ელ-ფოსტა</label>
           <input
-            className="input"
+            className={`input ${error ? 'error' : ''}`}
             type="email"
             placeholder="you@example.com"
             value={email}
@@ -104,11 +118,9 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label style={{ display: 'block', fontSize: '12px', color: 'var(--text2)', marginBottom: '6px', fontFamily: 'DM Mono, monospace' }}>
-            პაროლი
-          </label>
+          <label style={labelStyle}>პაროლი</label>
           <input
-            className="input"
+            className={`input ${error ? 'error' : ''}`}
             type="password"
             placeholder="მინიმუმ 8 სიმბოლო"
             value={password}
@@ -118,27 +130,41 @@ export default function RegisterPage() {
         </div>
 
         {error && (
-          <div style={{ fontSize: '13px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', borderRadius: '8px' }}>
+          <div style={{
+            fontSize: '13px', color: 'var(--danger)',
+            padding: '12px 16px',
+            background: 'rgba(251,113,133,0.06)',
+            border: '1px solid rgba(251,113,133,0.15)',
+            borderRadius: 'var(--radius-sm)',
+          }}>
             {error}
           </div>
         )}
 
         <button
-          className="btn btn-primary"
+          className="btn btn-primary btn-lg"
           type="submit"
           disabled={loading}
-          style={{ marginTop: '8px', justifyContent: 'center' }}
+          style={{ justifyContent: 'center', marginTop: '4px' }}
         >
-          {loading ? 'მიმდინარეობს...' : 'რეგისტრაცია →'}
+          {loading ? 'მიმდინარეობს...' : 'რეგისტრაცია'}
         </button>
       </form>
 
-      <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)', marginTop: '24px' }}>
+      <div className="divider" style={{ margin: '28px 0' }} />
+
+      <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)' }}>
         უკვე გაქვთ ანგარიში?{' '}
-        <Link href="/auth/login" style={{ color: 'var(--accent)' }}>
+        <Link href="/auth/login" style={{ color: 'var(--accent)', fontWeight: 500 }}>
           შესვლა
         </Link>
       </p>
     </div>
   )
+}
+
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontSize: '12px', color: 'var(--text2)',
+  marginBottom: '8px', fontFamily: 'DM Mono, monospace',
+  textTransform: 'uppercase', letterSpacing: '0.04em',
 }

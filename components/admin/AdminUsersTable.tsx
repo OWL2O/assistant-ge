@@ -26,10 +26,10 @@ function fmtDate(d: string) {
 
 export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRelations[] }) {
   const router = useRouter()
-  const [expanded, setExpanded]   = useState<string | null>(null)
+  const [expanded, setExpanded]     = useState<string | null>(null)
   const [grantModal, setGrantModal] = useState<ProfileWithRelations | null>(null)
-  const [nameModal, setNameModal]  = useState<{ profile: ProfileWithRelations; org: Organization } | null>(null)
-  const [search, setSearch]        = useState('')
+  const [nameModal, setNameModal]   = useState<{ profile: ProfileWithRelations; org: Organization } | null>(null)
+  const [search, setSearch]         = useState('')
   const [reqLoading, setReqLoading] = useState<string | null>(null)
 
   async function handleRequest(requestId: string, action: 'approve' | 'reject') {
@@ -51,18 +51,33 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
 
   return (
     <div>
-      {/* Search */}
-      <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <input
-          className="input"
-          placeholder="მომხმარებლის ძებნა..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ maxWidth: '320px', fontSize: '13px' }}
-        />
-        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '11px', color: 'var(--text3)' }}>
+      {/* Search bar */}
+      <div style={{
+        display: 'flex', gap: '12px', alignItems: 'center',
+        marginBottom: '16px',
+      }}>
+        <div style={{ position: 'relative', flex: '0 0 320px' }}>
+          <input
+            className="input"
+            placeholder="მომხმარებლის ძებნა..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ fontSize: '13px', paddingLeft: '40px' }}
+          />
+          <div style={{
+            position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)',
+            color: 'var(--text3)', fontSize: '14px', pointerEvents: 'none',
+          }}>
+            ⌕
+          </div>
+        </div>
+        <div style={{
+          fontFamily: 'DM Mono, monospace', fontSize: '11px', color: 'var(--text3)',
+          padding: '6px 12px', background: 'var(--surface2)',
+          border: '1px solid var(--border)', borderRadius: '20px',
+        }}>
           {filtered.length} მომხმარებელი
-        </span>
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -70,10 +85,10 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
           <thead>
             <tr>
               <th>მომხმარებელი</th>
-              <th>რეგისტრაცია</th>
+              <th>რეგ. თარიღი</th>
               <th>ორგ. / კრედიტი</th>
               <th>სტატუსი</th>
-              <th>მოთხოვნა</th>
+              <th>მოთხოვნები</th>
               <th>მოქმედება</th>
             </tr>
           </thead>
@@ -82,7 +97,7 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
               const paidOrgs    = profile.organizations.filter(o => !o.is_demo)
               const totalCreds  = profile.credits.reduce((s, c) => s + c.amount, 0)
               const available   = totalCreds - paidOrgs.length
-              const pendingReq  = profile.org_requests.find(r => r.status === 'pending')
+              const pendingReqs = profile.org_requests.filter(r => r.status === 'pending')
               const activeOrgs  = paidOrgs.filter(o => o.is_active)
               const expiredOrgs = paidOrgs.filter(o => !o.is_active)
               const isExpanded  = expanded === profile.id
@@ -95,9 +110,22 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                   >
                     {/* User */}
                     <td className="primary">
-                      <div style={{ fontWeight: 500 }}>{profile.full_name || '—'}</div>
-                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '11px', color: 'var(--text3)', marginTop: '2px' }}>
-                        {profile.email}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                          background: 'linear-gradient(135deg, rgba(129,140,248,0.3), rgba(99,102,241,0.2))',
+                          border: '1px solid rgba(129,140,248,0.2)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '11px', fontWeight: 600, color: 'var(--accent)',
+                        }}>
+                          {(profile.full_name || profile.email)[0].toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 500, fontSize: '13px' }}>{profile.full_name || '—'}</div>
+                          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'var(--text3)', marginTop: '1px' }}>
+                            {profile.email}
+                          </div>
+                        </div>
                       </div>
                     </td>
 
@@ -114,7 +142,11 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                         <span className="badge badge-active">{activeOrgs.length} აქტ.</span>
                         {expiredOrgs.length > 0 && <span className="badge badge-expired">{expiredOrgs.length} ვადაგ.</span>}
                         {available > 0 && <span className="badge badge-pending">{available} კრედ.</span>}
-                        {totalCreds === 0 && <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'var(--text3)' }}>კრედიტი 0</span>}
+                        {totalCreds === 0 && (
+                          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'var(--text3)' }}>
+                            0 კრედიტი
+                          </span>
+                        )}
                       </div>
                     </td>
 
@@ -127,29 +159,33 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                       )}
                     </td>
 
-                    {/* Request */}
+                    {/* Requests */}
                     <td onClick={e => e.stopPropagation()}>
-                      {pendingReq ? (
+                      {pendingReqs.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <span className="badge badge-pending">⏳ მოლოდინში</span>
-                          <div style={{ display: 'flex', gap: '4px' }}>
-                            <button
-                              className="btn btn-success btn-sm"
-                              onClick={() => handleRequest(pendingReq.id, 'approve')}
-                              disabled={reqLoading === pendingReq.id}
-                              style={{ fontSize: '11px', padding: '3px 8px' }}
-                            >
-                              ✓ დამტ.
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() => handleRequest(pendingReq.id, 'reject')}
-                              disabled={reqLoading === pendingReq.id}
-                              style={{ fontSize: '11px', padding: '3px 8px' }}
-                            >
-                              ✗ უარი
-                            </button>
-                          </div>
+                          <span className="badge badge-pending">
+                            {pendingReqs.length > 1 ? `${pendingReqs.length} მოლოდინში` : '● მოლოდინში'}
+                          </span>
+                          {pendingReqs.length === 1 && (
+                            <div style={{ display: 'flex', gap: '4px' }}>
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleRequest(pendingReqs[0].id, 'approve')}
+                                disabled={reqLoading === pendingReqs[0].id}
+                                style={{ fontSize: '11px', padding: '3px 10px' }}
+                              >
+                                ✓ დამტ.
+                              </button>
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => handleRequest(pendingReqs[0].id, 'reject')}
+                                disabled={reqLoading === pendingReqs[0].id}
+                                style={{ fontSize: '11px', padding: '3px 10px' }}
+                              >
+                                ✗ უარი
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <span style={{ color: 'var(--text3)', fontSize: '12px' }}>—</span>
@@ -168,6 +204,7 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                         <button
                           className="btn btn-ghost btn-sm"
                           onClick={() => setExpanded(isExpanded ? null : profile.id)}
+                          style={{ padding: '6px 10px' }}
                         >
                           {isExpanded ? '▲' : '▼'}
                         </button>
@@ -175,78 +212,119 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                     </td>
                   </tr>
 
-                  {/* Expanded orgs row */}
+                  {/* Expanded row */}
                   {isExpanded && (
                     <tr key={`${profile.id}-exp`}>
-                      <td colSpan={6} style={{ background: 'rgba(108,142,255,0.03)', padding: '16px 20px' }}>
-                        <div style={{ fontSize: '12px', color: 'var(--text3)', marginBottom: '10px', fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      <td colSpan={6} style={{
+                        background: 'rgba(129,140,248,0.02)',
+                        padding: '20px 24px',
+                        borderTop: '1px solid var(--border)',
+                      }}>
+                        <div style={{
+                          fontSize: '10px', color: 'var(--text3)', marginBottom: '12px',
+                          fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em',
+                        }}>
                           ორგანიზაციები
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: pendingReqs.length > 0 ? '20px' : '0' }}>
                           {profile.organizations.map(org => {
                             const days = getDaysRemaining(org.expires_at)
                             const dayColor = !days ? undefined : days > 60 ? 'var(--accent2)' : days > 30 ? 'var(--warn)' : 'var(--danger)'
                             return (
                               <div key={org.id} style={{
                                 display: 'flex', alignItems: 'center', gap: '12px',
-                                background: 'var(--surface2)', borderRadius: '8px',
+                                background: 'var(--surface2)', borderRadius: 'var(--radius-sm)',
                                 padding: '10px 14px', border: '1px solid var(--border)',
                               }}>
-                                <span style={{ fontSize: '16px' }}>{org.is_demo ? '🔬' : '🏢'}</span>
-                                <span style={{ flex: 1, fontWeight: 500, fontSize: '13px', color: 'var(--text)' }}>{org.name}</span>
+                                <div style={{
+                                  width: '22px', height: '22px', borderRadius: '6px',
+                                  background: org.is_demo ? 'rgba(251,191,36,0.1)' : 'rgba(52,211,153,0.1)',
+                                  border: `1px solid ${org.is_demo ? 'rgba(251,191,36,0.2)' : 'rgba(52,211,153,0.2)'}`,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontFamily: 'DM Mono, monospace', fontSize: '9px', fontWeight: 600,
+                                  color: org.is_demo ? 'var(--warn)' : 'var(--accent2)',
+                                  flexShrink: 0,
+                                }}>
+                                  {org.is_demo ? 'D' : 'O'}
+                                </div>
+                                <span style={{ flex: 1, fontWeight: 500, fontSize: '13px', color: 'var(--text)' }}>
+                                  {org.name}
+                                </span>
                                 <span className={`badge ${org.is_demo ? 'badge-demo' : org.is_active ? 'badge-active' : 'badge-expired'}`}>
                                   {org.is_demo ? 'Demo' : org.is_active ? 'აქტიური' : 'ვადაგასული'}
                                 </span>
                                 {days !== null && (
                                   <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '11px', color: dayColor }}>
-                                    {days > 0 ? `${days}დ` : 'ვადაგასული'}
+                                    {days > 0 ? `${days}დ` : 'ვადაგ.'}
                                   </span>
                                 )}
                                 {org.expires_at && (
                                   <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'var(--text3)' }}>
-                                    → {fmtDate(org.expires_at)}
+                                    {fmtDate(org.expires_at)}
                                   </span>
                                 )}
                                 {!org.is_demo && (
                                   <button
                                     className="btn btn-ghost btn-sm"
                                     onClick={() => setNameModal({ profile, org })}
-                                    style={{ fontSize: '11px', padding: '3px 8px' }}
+                                    style={{ fontSize: '11px', padding: '3px 10px' }}
                                   >
-                                    ✏ სახელი
+                                    სახელი
                                   </button>
                                 )}
                               </div>
                             )
                           })}
                           {profile.organizations.length === 0 && (
-                            <div style={{ color: 'var(--text3)', fontSize: '12px' }}>ორგანიზაცია არ არის</div>
+                            <div style={{ color: 'var(--text3)', fontSize: '12px', fontFamily: 'DM Mono, monospace' }}>
+                              ORG_EMPTY
+                            </div>
                           )}
                         </div>
 
-                        {/* Request message */}
-                        {pendingReq && (
-                          <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(251,191,36,0.07)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: '8px', fontSize: '12px' }}>
-                            {pendingReq.message && (
-                              <div style={{ color: 'var(--warn)', marginBottom: '8px' }}>
-                                💬 {pendingReq.message}
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                className="btn btn-success btn-sm"
-                                onClick={() => handleRequest(pendingReq.id, 'approve')}
-                                disabled={reqLoading === pendingReq.id}
-                              >
-                                ✓ დამტკიცება (+1 კრედიტი)
-                              </button>
-                              <button
-                                className="btn btn-danger btn-sm"
-                                onClick={() => handleRequest(pendingReq.id, 'reject')}
-                                disabled={reqLoading === pendingReq.id}
-                              >
-                                ✗ უარყოფა
-                              </button>
+                        {/* Pending requests */}
+                        {pendingReqs.length > 0 && (
+                          <div>
+                            <div style={{
+                              fontSize: '10px', color: 'var(--text3)', marginBottom: '10px',
+                              fontFamily: 'DM Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.06em',
+                            }}>
+                              მოლოდინში მოთხოვნები ({pendingReqs.length})
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {pendingReqs.map(req => (
+                                <div key={req.id} style={{
+                                  padding: '14px 16px',
+                                  background: 'rgba(251,191,36,0.04)',
+                                  border: '1px solid rgba(251,191,36,0.12)',
+                                  borderLeft: '3px solid var(--warn)',
+                                  borderRadius: 'var(--radius-sm)',
+                                  fontSize: '12px',
+                                }}>
+                                  {req.message && (
+                                    <div style={{ color: 'var(--text2)', marginBottom: '12px', lineHeight: 1.6, fontStyle: 'italic' }}>
+                                      &ldquo;{req.message}&rdquo;
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button
+                                      className="btn btn-success btn-sm"
+                                      onClick={() => handleRequest(req.id, 'approve')}
+                                      disabled={reqLoading === req.id}
+                                    >
+                                      ✓ დამტკიცება (+1 კრედიტი)
+                                    </button>
+                                    <button
+                                      className="btn btn-danger btn-sm"
+                                      onClick={() => handleRequest(req.id, 'reject')}
+                                      disabled={reqLoading === req.id}
+                                    >
+                                      ✗ უარყოფა
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         )}
@@ -260,15 +338,12 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
         </table>
       </div>
 
-      {/* Grant credit modal */}
       {grantModal && (
         <GrantCreditModal
           profile={grantModal}
           onClose={() => { setGrantModal(null); router.refresh() }}
         />
       )}
-
-      {/* Rename org modal */}
       {nameModal && (
         <RenameOrgModal
           org={nameModal.org}
@@ -281,10 +356,10 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
 
 // ─── GRANT CREDIT MODAL ──────────────────────────────────────
 function GrantCreditModal({ profile, onClose }: { profile: ProfileWithRelations; onClose: () => void }) {
-  const [amount, setAmount] = useState(1)
-  const [note, setNote]     = useState('')
+  const [amount, setAmount]   = useState(1)
+  const [note, setNote]       = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState('')
+  const [error, setError]     = useState('')
 
   async function grant() {
     setLoading(true); setError('')
@@ -300,25 +375,48 @@ function GrantCreditModal({ profile, onClose }: { profile: ProfileWithRelations;
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div style={{ fontFamily: 'Instrument Serif, serif', fontSize: '20px', marginBottom: '6px' }}>
-        + კრედიტის დამატება
-      </div>
-      <div style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '24px' }}>
-        <b style={{ color: 'var(--text)' }}>{profile.full_name || profile.email}</b>
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ fontSize: '10px', fontFamily: 'DM Mono, monospace', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+          კრედიტი
+        </div>
+        <div style={{ fontFamily: 'Instrument Serif, serif', fontSize: '22px', letterSpacing: '-0.3px' }}>
+          კრედიტის დამატება
+        </div>
+        <div style={{ fontSize: '13px', color: 'var(--text2)', marginTop: '6px' }}>
+          {profile.full_name || profile.email}
+        </div>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
           <label style={labelStyle}>კრედიტების რაოდენობა</label>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAmount(a => Math.max(1, a - 1))}>−</button>
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '22px', color: 'var(--accent)', minWidth: '40px', textAlign: 'center' }}>{amount}</span>
-            <button className="btn btn-ghost btn-sm" onClick={() => setAmount(a => a + 1)}>+</button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setAmount(a => Math.max(1, a - 1))}
+              style={{ width: '36px', height: '36px', padding: 0, justifyContent: 'center', borderRadius: '50%' }}
+            >
+              −
+            </button>
+            <span style={{
+              fontFamily: 'DM Mono, monospace', fontSize: '28px',
+              color: 'var(--accent)', minWidth: '48px', textAlign: 'center',
+              fontWeight: 500,
+            }}>
+              {amount}
+            </span>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={() => setAmount(a => a + 1)}
+              style={{ width: '36px', height: '36px', padding: 0, justifyContent: 'center', borderRadius: '50%' }}
+            >
+              +
+            </button>
           </div>
         </div>
 
         <div>
-          <label style={labelStyle}>შენიშვნა (სურვილისამებრ)</label>
+          <label style={labelStyle}>შენიშვნა</label>
           <input
             className="input"
             placeholder="მაგ. გადახდა 20.01.2025"
@@ -328,9 +426,13 @@ function GrantCreditModal({ profile, onClose }: { profile: ProfileWithRelations;
           />
         </div>
 
-        {error && <div style={{ fontSize: '12px', color: 'var(--danger)' }}>{error}</div>}
+        {error && (
+          <div style={{ fontSize: '12px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.15)', borderRadius: 'var(--radius-sm)' }}>
+            {error}
+          </div>
+        )}
 
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>გაუქმება</button>
           <button className="btn btn-success btn-sm" onClick={grant} disabled={loading}>
             {loading ? 'მიმდინარეობს...' : `✓ ${amount} კრედიტის დამატება`}
@@ -342,12 +444,10 @@ function GrantCreditModal({ profile, onClose }: { profile: ProfileWithRelations;
 }
 
 // ─── RENAME ORG MODAL ────────────────────────────────────────
-function RenameOrgModal({ org, onClose }: {
-  org: Organization; onClose: () => void
-}) {
-  const [name, setName]     = useState(org.name)
+function RenameOrgModal({ org, onClose }: { org: Organization; onClose: () => void }) {
+  const [name, setName]       = useState(org.name)
   const [loading, setLoading] = useState(false)
-  const [error, setError]   = useState('')
+  const [error, setError]     = useState('')
 
   async function rename() {
     if (!name.trim()) { setError('სახელი ცარიელია'); return }
@@ -364,10 +464,15 @@ function RenameOrgModal({ org, onClose }: {
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div style={{ fontFamily: 'Instrument Serif, serif', fontSize: '20px', marginBottom: '24px' }}>
-        ✏ ორგანიზაციის გადარქმევა
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ fontSize: '10px', fontFamily: 'DM Mono, monospace', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+          გადარქმევა
+        </div>
+        <div style={{ fontFamily: 'Instrument Serif, serif', fontSize: '22px', letterSpacing: '-0.3px' }}>
+          ორგანიზაციის სახელი
+        </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
           <label style={labelStyle}>ახალი სახელი</label>
           <input
@@ -378,7 +483,11 @@ function RenameOrgModal({ org, onClose }: {
             autoFocus
           />
         </div>
-        {error && <div style={{ fontSize: '12px', color: 'var(--danger)' }}>{error}</div>}
+        {error && (
+          <div style={{ fontSize: '12px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.15)', borderRadius: 'var(--radius-sm)' }}>
+            {error}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button className="btn btn-ghost btn-sm" onClick={onClose}>გაუქმება</button>
           <button className="btn btn-primary btn-sm" onClick={rename} disabled={loading}>
@@ -395,16 +504,29 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
   return (
     <div
       style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)',
-        backdropFilter: 'blur(4px)', zIndex: 200,
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.8)',
+        backdropFilter: 'blur(8px)',
+        zIndex: 200,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
       }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{
-        background: 'var(--surface)', border: '1px solid var(--border2)',
-        borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '400px',
-      }}>
+      <div
+        style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '36px', width: '100%', maxWidth: '420px',
+          boxShadow: 'var(--shadow-xl)',
+          animation: 'modalIn 0.25s cubic-bezier(0.4,0,0.2,1)',
+          position: 'relative', overflow: 'hidden',
+        }}
+      >
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(129,140,248,0.2), transparent)',
+        }} />
         {children}
       </div>
     </div>

@@ -12,18 +12,6 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient()
 
-  // Check for existing pending request
-  const { data: existing } = await admin
-    .from('org_requests')
-    .select('id')
-    .eq('user_id', user.id)
-    .eq('status', 'pending')
-    .maybeSingle()
-
-  if (existing) {
-    return NextResponse.json({ error: 'უკვე გაქვთ მოლოდინში მოთხოვნა' }, { status: 409 })
-  }
-
   const { error } = await admin.from('org_requests').insert({
     user_id: user.id,
     message: message || null,

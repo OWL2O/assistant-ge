@@ -12,18 +12,28 @@ function getDaysRemaining(expiresAt: string | null): number | null {
 function CountdownBar({ days }: { days: number }) {
   const pct = Math.max(0, Math.min(100, (days / 365) * 100))
   const color = days > 60 ? 'var(--accent2)' : days > 30 ? 'var(--warn)' : 'var(--danger)'
+  const shadow = days > 60
+    ? '0 0 8px rgba(52,211,153,0.4)'
+    : days > 30
+    ? '0 0 8px rgba(251,191,36,0.4)'
+    : '0 0 8px rgba(251,113,133,0.4)'
   return (
-    <div style={{ marginTop: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'var(--text3)' }}>
+    <div style={{ marginTop: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
           ვადა
         </span>
         <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '10px', color }}>
-          {days} დღე დარჩა
+          {days} დღე
         </span>
       </div>
-      <div style={{ height: '3px', background: 'var(--border2)', borderRadius: '2px' }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: '2px', transition: 'width 0.4s' }} />
+      <div style={{ height: '2px', background: 'var(--border)', borderRadius: '2px' }}>
+        <div style={{
+          height: '100%', width: `${pct}%`,
+          background: color, borderRadius: '2px',
+          boxShadow: shadow,
+          transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
+        }} />
       </div>
     </div>
   )
@@ -32,31 +42,56 @@ function CountdownBar({ days }: { days: number }) {
 export default function OrgCard({ org }: { org: Organization }) {
   const days = getDaysRemaining(org.expires_at)
   const isExpired = !org.is_demo && !org.is_active
+  const isActive = !org.is_demo && org.is_active
+
+  const borderColor = isExpired
+    ? 'rgba(251,113,133,0.2)'
+    : isActive
+    ? 'rgba(52,211,153,0.15)'
+    : 'var(--border)'
 
   return (
-    <div style={{
-      background: 'var(--surface)', border: `1px solid ${isExpired ? 'rgba(248,113,113,0.3)' : 'var(--border2)'}`,
-      borderRadius: '16px', padding: '22px',
-      opacity: isExpired ? 0.75 : 1,
-      transition: 'all 0.2s',
-      position: 'relative', overflow: 'hidden',
-    }}>
-      {/* Glow */}
-      {!org.is_demo && org.is_active && (
+    <div
+      className="org-card"
+      style={{
+        background: 'var(--surface)',
+        border: `1px solid ${borderColor}`,
+        borderRadius: 'var(--radius-xl)',
+        padding: '24px',
+        opacity: isExpired ? 0.7 : 1,
+        position: 'relative', overflow: 'hidden',
+      }}
+    >
+      {/* Top shimmer line */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
+        background: isActive
+          ? 'linear-gradient(90deg, transparent, rgba(52,211,153,0.3), transparent)'
+          : isExpired
+          ? 'linear-gradient(90deg, transparent, rgba(251,113,133,0.2), transparent)'
+          : 'linear-gradient(90deg, transparent, rgba(129,140,248,0.1), transparent)',
+      }} />
+
+      {/* Background glow for active */}
+      {isActive && (
         <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(74,222,128,0.05) 0%, transparent 70%)',
+          position: 'absolute', top: 0, left: 0, right: 0, height: '80px',
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(52,211,153,0.05) 0%, transparent 100%)',
           pointerEvents: 'none',
         }} />
       )}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
         <div>
-          <div style={{ fontSize: '18px', marginBottom: '4px' }}>
-            {org.is_demo ? '🔬' : '🏢'}
+          <div style={{
+            fontSize: '10px', fontFamily: 'DM Mono, monospace',
+            color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em',
+            marginBottom: '6px',
+          }}>
+            {org.is_demo ? 'Demo' : 'Org'}
           </div>
-          <div style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text)' }}>
+          <div style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', letterSpacing: '-0.2px' }}>
             {org.name}
           </div>
         </div>
@@ -65,24 +100,37 @@ export default function OrgCard({ org }: { org: Organization }) {
         </span>
       </div>
 
-      {/* Demo info */}
+      {/* Demo feature list */}
       {org.is_demo && (
-        <div style={{ fontSize: '12px', color: 'var(--text2)', lineHeight: 1.6 }}>
-          <div>✓ ფაილის ატვირთვა</div>
-          <div style={{ color: 'var(--text3)' }}>✗ ექსპორტი (გათიშული)</div>
-          <div style={{ color: 'var(--text3)' }}>✗ მხოლოდ 10 ჩანაწერი</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+          {[
+            { label: 'ფაილის ატვირთვა', ok: true },
+            { label: 'ექსპორტი', ok: false },
+            { label: 'მხოლოდ 10 ჩანაწერი', ok: false },
+          ].map(f => (
+            <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '4px', height: '4px', borderRadius: '50%',
+                background: f.ok ? 'var(--accent2)' : 'var(--text3)',
+                flexShrink: 0,
+              }} />
+              <span style={{ fontSize: '12px', color: f.ok ? 'var(--text2)' : 'var(--text3)' }}>
+                {f.label}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Expired info */}
       {isExpired && (
-        <div style={{ fontSize: '12px', color: 'var(--danger)', lineHeight: 1.6, marginBottom: '8px' }}>
-          ვადა გაუვიდა. განახლებისთვის გადაიხადეთ 20 ₾ და მიმართეთ ადმინს.
-        </div>
+        <p style={{ fontSize: '12px', color: 'var(--danger)', lineHeight: 1.6, marginBottom: '8px' }}>
+          ვადა გაუვიდა. განახლებისთვის გადაიხადეთ 20 ₾.
+        </p>
       )}
 
       {/* Countdown */}
-      {!org.is_demo && org.is_active && days !== null && (
+      {isActive && days !== null && (
         <CountdownBar days={days} />
       )}
 
@@ -91,7 +139,7 @@ export default function OrgCard({ org }: { org: Organization }) {
         <Link
           href={`/dashboard/importer?org=${org.id}`}
           className="btn btn-primary btn-sm"
-          style={{ marginTop: '16px', width: '100%', justifyContent: 'center' }}
+          style={{ marginTop: '20px', width: '100%', justifyContent: 'center' }}
         >
           {org.is_demo ? 'Demo-ს გახსნა' : 'იმპორტი →'}
         </Link>
