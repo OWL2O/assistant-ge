@@ -1,16 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+const EMAILS_KEY = 'assistants_saved_emails'
+
+function saveEmail(email: string) {
+  try {
+    const saved: string[] = JSON.parse(localStorage.getItem(EMAILS_KEY) || '[]')
+    const updated = [email, ...saved.filter(e => e !== email)].slice(0, 10)
+    localStorage.setItem(EMAILS_KEY, JSON.stringify(updated))
+  } catch {}
+}
+
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [email, setEmail]           = useState('')
+  const [password, setPassword]     = useState('')
+  const [error, setError]           = useState('')
+  const [loading, setLoading]       = useState(false)
+  const [savedEmails, setSavedEmails] = useState<string[]>([])
+
+  useEffect(() => {
+    try {
+      const saved: string[] = JSON.parse(localStorage.getItem(EMAILS_KEY) || '[]')
+      setSavedEmails(saved)
+    } catch {}
+  }, [])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -26,6 +44,7 @@ export default function LoginPage() {
       return
     }
 
+    saveEmail(email)
     router.push('/dashboard')
     router.refresh()
   }
@@ -51,9 +70,13 @@ export default function LoginPage() {
             placeholder="you@example.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
+            list="saved-emails-list"
             required
             autoFocus
           />
+          <datalist id="saved-emails-list">
+            {savedEmails.map(e => <option key={e} value={e} />)}
+          </datalist>
         </div>
 
         <div>
@@ -72,8 +95,8 @@ export default function LoginPage() {
           <div style={{
             fontSize: '13px', color: 'var(--danger)',
             padding: '12px 16px',
-            background: 'rgba(251,113,133,0.06)',
-            border: '1px solid rgba(251,113,133,0.15)',
+            background: 'rgba(192,57,43,0.06)',
+            border: '1px solid rgba(192,57,43,0.15)',
             borderRadius: 'var(--radius-sm)',
           }}>
             {error}

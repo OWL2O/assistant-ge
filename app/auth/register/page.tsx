@@ -4,6 +4,16 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
+const EMAILS_KEY = 'assistants_saved_emails'
+
+function saveEmail(email: string) {
+  try {
+    const saved: string[] = JSON.parse(localStorage.getItem(EMAILS_KEY) || '[]')
+    const updated = [email, ...saved.filter(e => e !== email)].slice(0, 10)
+    localStorage.setItem(EMAILS_KEY, JSON.stringify(updated))
+  } catch {}
+}
+
 export default function RegisterPage() {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
@@ -43,6 +53,7 @@ export default function RegisterPage() {
       return
     }
 
+    saveEmail(email)
     setDone(true)
   }
 
@@ -51,8 +62,8 @@ export default function RegisterPage() {
       <div className="card fade-in" style={{ textAlign: 'center' }}>
         <div style={{
           width: '56px', height: '56px', borderRadius: '50%',
-          background: 'linear-gradient(135deg, rgba(129,140,248,0.15), rgba(129,140,248,0.05))',
-          border: '1px solid rgba(129,140,248,0.2)',
+          background: 'rgba(45,91,227,0.08)',
+          border: '1px solid rgba(45,91,227,0.2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           margin: '0 auto 24px',
           fontSize: '24px', color: 'var(--accent)',
@@ -89,7 +100,7 @@ export default function RegisterPage() {
         რეგისტრაცია
       </h2>
       <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '32px' }}>
-        შექმენით ანგარიში ASSISTANT.ge-ზე
+        შექმენით ანგარიში ASSISTANTS.ge-ზე
       </p>
 
       <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -133,8 +144,8 @@ export default function RegisterPage() {
           <div style={{
             fontSize: '13px', color: 'var(--danger)',
             padding: '12px 16px',
-            background: 'rgba(251,113,133,0.06)',
-            border: '1px solid rgba(251,113,133,0.15)',
+            background: 'rgba(192,57,43,0.06)',
+            border: '1px solid rgba(192,57,43,0.15)',
             borderRadius: 'var(--radius-sm)',
           }}>
             {error}

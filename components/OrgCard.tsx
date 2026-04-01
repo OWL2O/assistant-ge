@@ -31,7 +31,6 @@ function CountdownBar({ days }: { days: number }) {
         <div style={{
           height: '100%', width: `${pct}%`,
           background: color, borderRadius: '2px',
-          boxShadow: shadow,
           transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)',
         }} />
       </div>
@@ -45,9 +44,9 @@ export default function OrgCard({ org }: { org: Organization }) {
   const isActive = !org.is_demo && org.is_active
 
   const borderColor = isExpired
-    ? 'rgba(251,113,133,0.2)'
+    ? 'rgba(192,57,43,0.2)'
     : isActive
-    ? 'rgba(52,211,153,0.15)'
+    ? 'rgba(26,122,74,0.18)'
     : 'var(--border)'
 
   return (
@@ -62,25 +61,6 @@ export default function OrgCard({ org }: { org: Organization }) {
         position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* Top shimmer line */}
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-        background: isActive
-          ? 'linear-gradient(90deg, transparent, rgba(52,211,153,0.3), transparent)'
-          : isExpired
-          ? 'linear-gradient(90deg, transparent, rgba(251,113,133,0.2), transparent)'
-          : 'linear-gradient(90deg, transparent, rgba(129,140,248,0.1), transparent)',
-      }} />
-
-      {/* Background glow for active */}
-      {isActive && (
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '80px',
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(52,211,153,0.05) 0%, transparent 100%)',
-          pointerEvents: 'none',
-        }} />
-      )}
-
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
         <div>

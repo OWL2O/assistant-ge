@@ -36,12 +36,6 @@ export default function CreateOrgForm() {
       display: 'flex', flexDirection: 'column', gap: '14px',
       justifyContent: 'center', position: 'relative', overflow: 'hidden',
     }}>
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(52,211,153,0.03) 0%, transparent 70%)',
-        pointerEvents: 'none',
-      }} />
-
       <div>
         <div style={{
           fontSize: '10px', fontFamily: 'DM Mono, monospace',

@@ -16,7 +16,8 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
   }
 
   return (
-    <header className="glass" style={{
+    <header style={{
+      background: 'var(--surface)',
       borderBottom: '1px solid var(--border)',
       position: 'sticky', top: 0, zIndex: 100,
     }}>
@@ -31,7 +32,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
             fontFamily: 'Instrument Serif, serif', fontSize: '20px',
             letterSpacing: '-0.3px', color: 'var(--text)',
           }}>
-            ASSISTANT<span style={{ color: 'var(--accent)', fontStyle: 'italic' }}>.ge</span>
+            ASSISTANTS<span style={{ color: 'var(--accent)', fontStyle: 'italic' }}>.ge</span>
           </span>
         </Link>
 
@@ -41,9 +42,9 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
             <Link href="/admin" style={{
               fontSize: '12px', color: 'var(--accent)',
               fontFamily: 'DM Mono, monospace',
-              background: 'rgba(129,140,248,0.08)',
+              background: 'rgba(45,91,227,0.07)',
               padding: '5px 14px', borderRadius: '20px',
-              border: '1px solid rgba(129,140,248,0.2)',
+              border: '1px solid rgba(45,91,227,0.2)',
               transition: 'all 0.15s',
               letterSpacing: '0.02em',
             }}>
@@ -58,7 +59,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
           }}>
             <div style={{
               width: '20px', height: '20px', borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--accent), #6366f1)',
+              background: 'var(--accent)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '9px', fontWeight: 700, color: '#fff', flexShrink: 0,
             }}>

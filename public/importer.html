@@ -699,9 +699,9 @@
         <tr>
           <th class="col-locked">თარიღი</th>
           <th class="col-editable">დოკუმენტი</th>
-          <th class="col-warn">ანგ. დებეტი</th>
+          <th class="col-warn" style="white-space:nowrap">ანგ. დებეტი <button id="fi-btn-2" onclick="filterIncomplete(2)" title="მხოლოდ შეუვსებელი" style="margin-left:5px;background:none;border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:1px 5px;font-size:10px;color:var(--text3);vertical-align:middle;line-height:1">☐</button></th>
           <th class="col-editable">დებ. დასახელება</th>
-          <th class="col-warn">ანგ. კრედიტი</th>
+          <th class="col-warn" style="white-space:nowrap">ანგ. კრედიტი <button id="fi-btn-4" onclick="filterIncomplete(4)" title="მხოლოდ შეუვსებელი" style="margin-left:5px;background:none;border:1px solid var(--border2);border-radius:4px;cursor:pointer;padding:1px 5px;font-size:10px;color:var(--text3);vertical-align:middle;line-height:1">☐</button></th>
           <th class="col-editable">კრედ. დასახელება</th>
           <th class="col-editable">ვალუტა / კურსი</th>
           <th class="col-locked">თანხა</th>
@@ -821,7 +821,7 @@ function updateRefInfo() {
   const el = document.getElementById('ref-info');
   if (!el) return;
   if (refData.meta) {
-    el.textContent = refData.meta.filename + ' · ' + refData.meta.time;
+    el.textContent = 'ატვირთულია ფაილი "' + refData.meta.filename + '"';
     el.style.display = 'block';
   } else {
     el.style.display = 'none';
@@ -1060,6 +1060,15 @@ function processFile(file) {
       const sheetName = wb.SheetNames.find(n => n !== 'Summary') || wb.SheetNames[1];
       const ws = wb.Sheets[sheetName];
       const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+
+      // Validate TBC format
+      const hasEnoughCols = raw.length > 0 && raw[0] && raw[0].length >= 3;
+      const hasDataRows   = raw.length > 2 && raw.slice(2).some(r => r && r[0]);
+      if (!hasEnoughCols || !hasDataRows) {
+        show('dropzone');
+        toast('ფაილი არ შეესაბამება TBC ბანკის ამონაწერის ფორმატს. გთხოვთ ატვირთოთ TBC-ის .xlsx ამონაწერი (სხვა ფაილები მხარდაჭერილი არ არის).', 'error');
+        return;
+      }
 
       rows = [];
       let count = 0;
@@ -1357,6 +1366,12 @@ function resetToUpload() {
   document.getElementById('file-input').value = '';
   const tf = document.getElementById('toolbar-filename');
   if (tf) { tf.textContent = ''; tf.style.display = 'none'; }
+  // Reset incomplete filters
+  [2, 4].forEach(col => {
+    incompleteFilterState[col] = false;
+    const btn = document.getElementById('fi-btn-' + col);
+    if (btn) { btn.textContent = '☐'; btn.style.color = 'var(--text3)'; btn.style.borderColor = 'var(--border2)'; }
+  });
   show('dropzone');
 }
 function toast(msg, type='') {
@@ -1454,7 +1469,23 @@ function rowTxt(row,col) {
     default: return '';
   }
 }
+const incompleteFilterState = {};
+
+function filterIncomplete(colIdx) {
+  incompleteFilterState[colIdx] = !incompleteFilterState[colIdx];
+  const isActive = incompleteFilterState[colIdx];
+  const btn = document.getElementById('fi-btn-' + colIdx);
+  if (btn) {
+    btn.textContent = isActive ? '☑' : '☐';
+    btn.style.color = isActive ? 'var(--warn)' : 'var(--text3)';
+    btn.style.borderColor = isActive ? 'var(--warn)' : 'var(--border2)';
+  }
+  applyFilters();
+}
+
 function applyFilters() {
+  const filterDebit  = !!incompleteFilterState[2];
+  const filterCredit = !!incompleteFilterState[4];
   document.querySelectorAll('#table-body tr').forEach(tr => {
     const i=parseInt(tr.dataset.index), row=rows[i]; let ok=true;
     for (const [col,val] of Object.entries(activeFilters)) {
@@ -1464,6 +1495,11 @@ function applyFilters() {
         if (val==='გასვლა'   &&  row.isIncome)                 { ok=false; break; }
         if (val==='შეუვსებელი' && row.debitAcc && row.creditAcc) { ok=false; break; }
       } else { if (!rowTxt(row,col).toLowerCase().includes(val.toLowerCase())) { ok=false; break; } }
+    }
+    if (ok && (filterDebit || filterCredit)) {
+      const debitWarn  = filterDebit  && !row.debitAcc;
+      const creditWarn = filterCredit && !row.creditAcc;
+      if (!debitWarn && !creditWarn) ok = false;
     }
     tr.style.display = ok ? '' : 'none';
   });

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createAdminClient } from '@/lib/supabase/admin'
 import AdminUsersTable from '@/components/admin/AdminUsersTable'
 import type { Organization, OrgRequest } from '@/lib/types'

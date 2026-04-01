@@ -40,15 +40,15 @@ export default function RequestOrgButton({ hasPending: _hasPending }: { hasPendi
       <div style={{
         display: 'flex', alignItems: 'center', gap: '12px',
         padding: '14px 20px',
-        background: 'rgba(52,211,153,0.06)',
-        border: '1px solid rgba(52,211,153,0.2)',
+        background: 'rgba(26,122,74,0.06)',
+        border: '1px solid rgba(26,122,74,0.2)',
         borderRadius: 'var(--radius-md)',
         fontSize: '14px', color: 'var(--accent2)',
         animation: 'fadeIn 0.3s ease',
       }}>
         <div style={{
           width: '20px', height: '20px', borderRadius: '50%',
-          background: 'rgba(52,211,153,0.15)',
+          background: 'rgba(26,122,74,0.12)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: '11px', flexShrink: 0,
         }}>✓</div>
@@ -71,8 +71,8 @@ export default function RequestOrgButton({ hasPending: _hasPending }: { hasPendi
         <div style={{
           fontSize: '13px', color: 'var(--danger)',
           padding: '10px 14px',
-          background: 'rgba(251,113,133,0.06)',
-          border: '1px solid rgba(251,113,133,0.15)',
+          background: 'rgba(192,57,43,0.06)',
+          border: '1px solid rgba(192,57,43,0.15)',
           borderRadius: 'var(--radius-sm)',
         }}>
           {error}

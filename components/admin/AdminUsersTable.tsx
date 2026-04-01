@@ -113,8 +113,8 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
                           width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                          background: 'linear-gradient(135deg, rgba(129,140,248,0.3), rgba(99,102,241,0.2))',
-                          border: '1px solid rgba(129,140,248,0.2)',
+                          background: 'rgba(45,91,227,0.1)',
+                          border: '1px solid rgba(45,91,227,0.2)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '11px', fontWeight: 600, color: 'var(--accent)',
                         }}>
@@ -216,7 +216,7 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                   {isExpanded && (
                     <tr key={`${profile.id}-exp`}>
                       <td colSpan={6} style={{
-                        background: 'rgba(129,140,248,0.02)',
+                        background: 'var(--surface2)',
                         padding: '20px 24px',
                         borderTop: '1px solid var(--border)',
                       }}>
@@ -239,8 +239,8 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                               }}>
                                 <div style={{
                                   width: '22px', height: '22px', borderRadius: '6px',
-                                  background: org.is_demo ? 'rgba(251,191,36,0.1)' : 'rgba(52,211,153,0.1)',
-                                  border: `1px solid ${org.is_demo ? 'rgba(251,191,36,0.2)' : 'rgba(52,211,153,0.2)'}`,
+                                  background: org.is_demo ? 'rgba(180,83,9,0.08)' : 'rgba(26,122,74,0.08)',
+                                  border: `1px solid ${org.is_demo ? 'rgba(180,83,9,0.2)' : 'rgba(26,122,74,0.2)'}`,
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                                   fontFamily: 'DM Mono, monospace', fontSize: '9px', fontWeight: 600,
                                   color: org.is_demo ? 'var(--warn)' : 'var(--accent2)',
@@ -296,8 +296,8 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                               {pendingReqs.map(req => (
                                 <div key={req.id} style={{
                                   padding: '14px 16px',
-                                  background: 'rgba(251,191,36,0.04)',
-                                  border: '1px solid rgba(251,191,36,0.12)',
+                                  background: 'rgba(180,83,9,0.05)',
+                                  border: '1px solid rgba(180,83,9,0.15)',
                                   borderLeft: '3px solid var(--warn)',
                                   borderRadius: 'var(--radius-sm)',
                                   fontSize: '12px',
@@ -427,7 +427,7 @@ function GrantCreditModal({ profile, onClose }: { profile: ProfileWithRelations;
         </div>
 
         {error && (
-          <div style={{ fontSize: '12px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.15)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.15)', borderRadius: 'var(--radius-sm)' }}>
             {error}
           </div>
         )}
@@ -484,7 +484,7 @@ function RenameOrgModal({ org, onClose }: { org: Organization; onClose: () => vo
           />
         </div>
         {error && (
-          <div style={{ fontSize: '12px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(251,113,133,0.06)', border: '1px solid rgba(251,113,133,0.15)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--danger)', padding: '10px 14px', background: 'rgba(192,57,43,0.06)', border: '1px solid rgba(192,57,43,0.15)', borderRadius: 'var(--radius-sm)' }}>
             {error}
           </div>
         )}
@@ -505,8 +505,7 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
     <div
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.8)',
-        backdropFilter: 'blur(8px)',
+        background: 'rgba(0,0,0,0.4)',
         zIndex: 200,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
       }}
@@ -523,10 +522,6 @@ function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClos
           position: 'relative', overflow: 'hidden',
         }}
       >
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(129,140,248,0.2), transparent)',
-        }} />
         {children}
       </div>
     </div>

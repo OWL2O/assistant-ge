@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
@@ -51,8 +53,8 @@ export default async function DashboardPage() {
       {/* Admin shortcut */}
       {profile?.is_admin && (
         <div style={{
-          background: 'rgba(129,140,248,0.05)',
-          border: '1px solid rgba(129,140,248,0.15)',
+          background: 'rgba(45,91,227,0.05)',
+          border: '1px solid rgba(45,91,227,0.15)',
           borderRadius: 'var(--radius-md)',
           padding: '14px 20px', marginBottom: '20px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -61,7 +63,6 @@ export default async function DashboardPage() {
             <div style={{
               width: '6px', height: '6px', borderRadius: '50%',
               background: 'var(--accent)',
-              boxShadow: '0 0 6px var(--accent)',
             }} />
             <span style={{ fontSize: '13px', color: 'var(--accent)', fontWeight: 500 }}>
               ადმინის პანელი
@@ -70,9 +71,9 @@ export default async function DashboardPage() {
           <Link href="/admin" style={{
             fontSize: '12px', color: 'var(--accent)',
             fontFamily: 'DM Mono, monospace',
-            background: 'rgba(129,140,248,0.1)',
+            background: 'rgba(45,91,227,0.08)',
             padding: '5px 14px', borderRadius: '20px',
-            border: '1px solid rgba(129,140,248,0.2)',
+            border: '1px solid rgba(45,91,227,0.2)',
           }}>
             გახსნა →
           </Link>
@@ -140,11 +141,6 @@ export default async function DashboardPage() {
         padding: '32px',
         position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{
-          position: 'absolute', top: 0, left: 0, right: 0, height: '1px',
-          background: 'linear-gradient(90deg, transparent, rgba(129,140,248,0.15), transparent)',
-        }} />
-
         <div style={{ marginBottom: '24px' }}>
           <div style={{
             fontSize: '10px', fontFamily: 'DM Mono, monospace',
