@@ -810,6 +810,18 @@
   </div>
 </div>
 
+<!-- CURRENCY ERROR MODAL -->
+<div class="modal-overlay" id="currency-error-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">⚠ ვალუტის შეცდომა</div>
+    <div class="modal-sub">შემდეგ სტრიქონებში ვალუტის კურსი ვერ მოიძებნა. გთხოვთ გაასწოროთ ვალუტა ან ხელით შეიყვანოთ კურსი.</div>
+    <div id="currency-error-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;max-height:240px;overflow-y:auto"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="document.getElementById('currency-error-modal').classList.remove('visible')">გასაგებია</button>
+    </div>
+  </div>
+</div>
+
 <!-- BANK MISMATCH MODAL -->
 <div class="modal-overlay" id="mismatch-modal">
   <div class="modal" style="max-width:400px">
@@ -855,6 +867,8 @@ function saveRef(name, data) { localStorage.setItem(refKey(name), JSON.stringify
 function cfgKey(name) { return 'fins_cfg_' + name.toLowerCase().replace(/\s+/g,'_'); }
 function loadCfgOrg(name) { try { const r = localStorage.getItem(cfgKey(name)); return r ? JSON.parse(r) : {}; } catch(e) { return {}; } }
 function saveCfgOrg(name, data) { localStorage.setItem(cfgKey(name), JSON.stringify(data)); }
+
+
 function updateRefInfo() {
   const el = document.getElementById('ref-info');
   if (!el) return;
@@ -1146,12 +1160,15 @@ function cancelBankMismatch() {
 function buildRow({ date, txId, paidIn, paidOut, partner, partnerTax, partnerAcc, description, txType, addDesc }) {
   const isIncome = paidIn > 0;
   const amount   = isIncome ? paidIn : paidOut;
-  const mk       = partnerTax || partnerAcc || partner;
   const danishnuleba = description.includes('გადასახადების ერთიანი კოდი') && addDesc ? addDesc : description;
+  // PMD expense or treasury: use danishnuleba as memKey so purpose field identifies the debit account
+  const isTreasury  = !isIncome && (partnerTax === 'ერთიანი სახაზინო კოდი - საბიუჯეტო გადასახადი' || partnerTax === '1010010000');
+  const useDescKey  = isTreasury || (!isIncome && (txType === 'PMD' || txType === 'საბიუჯეტო გადარიცხვები'));
+  const mk          = useDescKey ? danishnuleba : (partnerTax || partnerAcc || partner);
 
   let contraAcc   = '';
-  let contraLabel = partner;
-  if (partnerTax) {
+  let contraLabel = useDescKey ? danishnuleba : partner;
+  if (partnerTax && !useDescKey) {
     if (!isIncome && refData.creditors[partnerTax]) { contraAcc = refData.creditors[partnerTax].acc; contraLabel = refData.creditors[partnerTax].name; }
     else if (isIncome && refData.debtors[partnerTax]) { contraAcc = refData.debtors[partnerTax].acc; contraLabel = refData.debtors[partnerTax].name; }
   }
@@ -1211,16 +1228,18 @@ function parseBogRows(raw) {
     const txType   = (r[6] || '').trim();
     const isCom    = txType === 'COM';
 
-    // Debtors: cols I(8)=name, J(9)=taxId; Creditors: cols O(14)=name, P(15)=taxId
-    // COM = commission → auto-label as საკომისიო
-    const partner    = isCom ? 'საკომისიო' : (isIncome ? (r[8]  || '').trim() : (r[14] || '').trim());
-    const partnerTax = isCom ? ''           : (isIncome ? (r[9]  || '').trim() : (r[15] || '').trim());
+    // COM → commission; expense → O(14)=recipient name, P(15)=taxId (fallback to F(5) if O empty); income → J(9), K(10)
+    const isExpense   = paidOut > 0;
+    const rawPartner  = isExpense ? (r[14] || '').trim() : (r[9]  || '').trim();
+    const partner     = isCom ? 'საკომისიო' : (rawPartner || (isExpense ? (r[5] || '').trim().split(/\s/)[0] : ''));
+    const partnerAcc  = '';
+    const partnerTax  = isCom ? ''           : (isExpense ? (r[15] || '').trim() : (r[10] || '').trim());
 
     result.push(buildRow({
       date: r[0], txId: '', // document field empty (editable)
       paidIn, paidOut,
       partner, partnerTax,
-      partnerAcc:  '',
+      partnerAcc,
       description: (r[19] || '').trim(), // T field = დანიშნულება
       txType,
       addDesc:     '',
@@ -1318,7 +1337,7 @@ function renderTable() {
       </td>
       <td class="td-amount ${row.isIncome?'income':'expense'}" style="min-width:80px">${row.isIncome?'+':'-'}${fAmt(row.amount)}</td>
       <td style="min-width:260px;max-width:500px">${iCell(i,'danishnuleba',row.danishnuleba,false,'min-width:250px')}</td>
-      <td class="td-locked" style="min-width:140px;max-width:240px" title="${esc(row.partner)}">${trunc(row.partner,36)}</td>
+      <td class="td-locked" style="min-width:140px;max-width:240px" title="${esc(row.partner)}${row.partnerTax?' · '+row.partnerTax:''}">${trunc(row.partner,28)}${row.partnerTax?`<span style="color:var(--text3);font-size:10px;margin-left:5px;font-family:'DM Mono',monospace">${row.partnerTax}</span>`:''}</td>
       <td class="td-locked">${badgeType(row.txType)}</td>
       <td class="td-delete"><button class="btn-delete" onclick="toggleDelete(${i})" title="წაშლა">🗑</button></td>
     `;
@@ -1355,15 +1374,13 @@ function onCellChange(el) {
 
     rows.forEach((r, j) => {
       if (j === i || r.memKey !== row.memKey) return;
-      if (!r.debitAcc || !r.creditAcc) {
-        if (!r.locked_debit  && !r.debitAcc)  { r.debitAcc   = row.debitAcc;   r.debitLabel  = row.debitLabel; }
-        if (!r.locked_credit && !r.creditAcc) { r.creditAcc  = row.creditAcc;  r.creditLabel = row.creditLabel; }
-        const tr = document.querySelector(`tr[data-index="${j}"]`);
-        if (tr) ['debitAcc','debitLabel','creditAcc','creditLabel'].forEach(f => {
-          const inp = tr.querySelector(`[data-field="${f}"]`);
-          if (inp && rows[j][f] !== inp.value) { inp.value = rows[j][f]; inp.classList.remove('warn'); inp.classList.add('filled'); }
-        });
-      }
+      if (!r.locked_debit)  { r.debitAcc   = row.debitAcc;   r.debitLabel  = row.debitLabel; }
+      if (!r.locked_credit) { r.creditAcc  = row.creditAcc;  r.creditLabel = row.creditLabel; }
+      const tr = document.querySelector(`tr[data-index="${j}"]`);
+      if (tr) ['debitAcc','debitLabel','creditAcc','creditLabel'].forEach(f => {
+        const inp = tr.querySelector(`[data-field="${f}"]`);
+        if (inp && rows[j][f] !== inp.value) { inp.value = rows[j][f]; inp.classList.remove('warn'); inp.classList.add('filled'); }
+      });
     });
   }
   updateStats(); checkDups();
@@ -1423,13 +1440,14 @@ function updateStats() {
   const pct = active.length ? Math.round((active.length - missing) / active.length * 100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
 
+  const rateErrors = active.filter(r => r.rateError).length;
   const btn = document.getElementById('export-btn');
   if (currentOrg && currentOrg.isDemo) {
     btn.disabled = true;
     btn.title = 'Demo რეჟიმში ექსპორტი გათიშულია';
   } else {
-    btn.disabled = missing > 0;
-    btn.title = '';
+    btn.disabled = missing > 0 || rateErrors > 0;
+    btn.title = rateErrors > 0 ? 'ზოგიერთ სტრიქონში ვალუტის კურსი ვერ მოიძებნა' : '';
   }
 }
 
@@ -1448,6 +1466,20 @@ function doExport(fmt) {
   if (currentOrg && currentOrg.isDemo) { toast('Demo რეჟიმში ექსპორტი შეუძლებელია', 'error'); return; }
   const missing = rows.filter(r => !r.deleted && (!r.debitAcc || !r.creditAcc)).length;
   if (missing > 0) { toast(missing + ' სტრიქონს აქვს შეუვსებელი ანგარიში', 'error'); return; }
+  const badRates = rows.map((r,i) => ({r,i})).filter(({r}) => !r.deleted && r.rateError);
+  if (badRates.length > 0) {
+    const list = document.getElementById('currency-error-list');
+    list.innerHTML = badRates.map(({r,i}) =>
+      `<div style="display:flex;align-items:center;gap:10px;background:var(--surface2);border:1px solid var(--danger);border-radius:8px;padding:8px 12px">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);min-width:28px">#${i+1}</span>
+        <span style="font-size:12px;color:var(--danger);font-family:'DM Mono',monospace;font-weight:500">${r.currency}</span>
+        <span style="font-size:12px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.partner||r.danishnuleba||'—'}</span>
+        <span style="font-size:11px;color:var(--text3)">${formatDate(r.date)}</span>
+      </div>`
+    ).join('');
+    document.getElementById('currency-error-modal').classList.add('visible');
+    return;
+  }
 
   const slug = currentOrg.name.replace(/\s+/g,'_');
   const exportRows = rows.filter(r => !r.deleted).map(row =>
@@ -1570,7 +1602,7 @@ function onRateBadgeClick(badge) {
   badge.textContent=''; badge.appendChild(inp); inp.focus(); inp.select();
   function commit() {
     const v = parseFloat(inp.value.replace(',','.'));
-    if (!isNaN(v) && v > 0) { rows[i].rate=v; badge.className='rate-badge fetched'; badge.textContent='×'+v; toast(row.currency+' კურსი: ×'+v,'success'); }
+    if (!isNaN(v) && v > 0) { rows[i].rate=v; rows[i].rateError=false; badge.className='rate-badge fetched'; badge.textContent='×'+v; toast(row.currency+' კურსი: ×'+v,'success'); updateStats(); }
     else { badge.textContent=cur?'×'+cur:'⚠ ვერ მოიძებნა'; badge.className=cur?'rate-badge fetched':'rate-badge error'; }
   }
   inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){inp.value=cur;inp.blur();} });
@@ -1581,12 +1613,13 @@ async function onCurrencyChange(el) {
   const i = parseInt(el.dataset.index);
   const cur = el.value.trim().toUpperCase(); el.value=cur; rows[i].currency=cur;
   const rb = document.getElementById('rate-'+i);
-  if (!cur || cur==='GEL') { rows[i].rate=1; if(rb){rb.textContent='';rb.className='rate-badge';} return; }
+  if (!cur || cur==='GEL') { rows[i].rate=1; rows[i].rateError=false; if(rb){rb.textContent='';rb.className='rate-badge';} updateStats(); return; }
   el.classList.add('loading'); if(rb){rb.textContent='...';rb.className='rate-badge';}
   const rate = await fetchNbgRate(cur, getDateStr(rows[i].date));
   el.classList.remove('loading');
-  if (rate) { rows[i].rate=rate; if(rb){rb.textContent='×'+rate;rb.className='rate-badge fetched';} toast(cur+' '+getDateStr(rows[i].date)+': '+rate+' ₾','success'); }
-  else { rows[i].rate=1; if(rb){rb.textContent='⚠ ვერ მოიძებნა';rb.className='rate-badge error';} toast(cur+' კურსი ვერ მოიძებნა','error'); }
+  if (rate) { rows[i].rate=rate; rows[i].rateError=false; if(rb){rb.textContent='×'+rate;rb.className='rate-badge fetched';} toast(cur+' '+getDateStr(rows[i].date)+': '+rate+' ₾','success'); }
+  else { rows[i].rate=1; rows[i].rateError=true; if(rb){rb.textContent='⚠ ვერ მოიძებნა';rb.className='rate-badge error';} toast(cur+' კურსი ვერ მოიძებნა','error'); }
+  updateStats();
 }
 
 // ─── FILTERS ─────────────────────────────────────────────────
