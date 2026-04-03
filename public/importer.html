@@ -604,12 +604,26 @@
     font-family: 'DM Mono', monospace; margin-top: 2px;
   }
   .cell-dup-wrap { display: flex; flex-direction: column; }
+
+  /* ─── BANK SELECTOR ─── */
+  .bank-selector { display: flex; gap: 8px; margin-bottom: 24px; width: 100%; }
+  .bank-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 12px; padding: 11px 12px; cursor: pointer; transition: all 0.18s;
+  }
+  .bank-btn:hover { border-color: var(--accent); background: rgba(108,142,255,0.06); }
+  .bank-btn.active { border-color: var(--accent); background: rgba(108,142,255,0.08); box-shadow: 0 0 0 1px rgba(108,142,255,0.2); }
+  .bank-btn-abbr { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text3); transition: color 0.18s; }
+  .bank-btn.active .bank-btn-abbr { color: var(--accent); }
+  .bank-btn-label { font-size: 10px; color: var(--text3); white-space: nowrap; transition: color 0.18s; }
+  .bank-btn.active .bank-btn-label { color: var(--text2); }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">FINS <span>·</span> TBC იმპორტი</div>
+  <div class="logo" id="logo-title">FINS <span>·</span> TBC იმპორტი</div>
   <div class="header-right">
     <div class="org-badge" id="org-badge" onclick="goToOrgScreen()">
       <div class="org-dot" id="org-badge-dot"></div>
@@ -638,9 +652,19 @@
 <!-- DROP ZONE -->
 <div id="dropzone-screen">
   <div class="drop-card" id="drop-card">
+    <div class="bank-selector">
+      <button id="bank-btn-tbc" class="bank-btn active" onclick="selectBank('tbc')">
+        <span class="bank-btn-abbr">TBC</span>
+        <span class="bank-btn-label">TBC ბანკი</span>
+      </button>
+      <button id="bank-btn-bog" class="bank-btn" onclick="selectBank('bog')">
+        <span class="bank-btn-abbr">BOG</span>
+        <span class="bank-btn-label">საქართველოს ბანკი</span>
+      </button>
+    </div>
     <span class="drop-icon">📂</span>
-    <div class="drop-title">TBC ამონაწერი</div>
-    <p class="drop-sub">
+    <div class="drop-title" id="drop-title">TBC ამონაწერი</div>
+    <p class="drop-sub" id="drop-sub">
       ჩააგდეთ ან აირჩიეთ TBC-ის <code>.xlsx</code> ბანკის ამონაწერი.<br>
       პროგრამა დაამუშავებს და გამოგიტანს რედაქტირებად ხედს.
     </p>
@@ -786,13 +810,27 @@
   </div>
 </div>
 
+<!-- BANK MISMATCH MODAL -->
+<div class="modal-overlay" id="mismatch-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">ბანკის შეუსაბამობა</div>
+    <div class="modal-sub" id="mismatch-body" style="margin-bottom:0"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="cancelBankMismatch()">გაუქმება</button>
+      <button class="btn btn-primary btn-sm" id="mismatch-confirm-btn" onclick="confirmBankMismatch()">გაგრძელება</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
 // ─── CONSTANTS ───────────────────────────────────────────────
 let bankAccount     = '1210/01';
-const BANK_LABEL    = 'TBC GEL';
-const FINS_HEADERS  = ['თარიღი*','დოკუმენტი','ანგ. დებეტი*','დასახელება','ანგ. კრედიტი*','დასახელება','თანხა*','ვალუტა*','კურსი*','რაოდენობა','ერთეული','ერთეულის ფასი','დანიშნულება','ობიექტი*','ზემოქმედი','კავშირი','შექმინს თარიღი'];
+let BANK_LABEL      = 'TBC GEL';
+let selectedBank    = 'tbc'; // 'tbc' | 'bog'
+let pendingFile     = null;  // { wb, file } — awaiting bank mismatch confirmation
+const FINS_HEADERS  =['თარიღი*','დოკუმენტი','ანგ. დებეტი*','დასახელება','ანგ. კრედიტი*','დასახელება','თანხა*','ვალუტა*','კურსი*','რაოდენობა','ერთეული','ერთეულის ფასი','დანიშნულება','ობიექტი*','ზემოქმედი','კავშირი','შექმინს თარიღი'];
 const DEMO_LIMIT    = 10;
 const _AP           = btoa('12345654321'); // admin password check
 
@@ -821,11 +859,20 @@ function updateRefInfo() {
   const el = document.getElementById('ref-info');
   if (!el) return;
   if (refData.meta) {
-    el.textContent = 'ატვირთულია ფაილი "' + refData.meta.filename + '"';
+    el.innerHTML = 'ატვირთულია: <b>' + esc(refData.meta.filename) + '</b>' +
+      ' <button onclick="clearRef()" title="გაუქმება" style="margin-left:6px;background:none;border:1px solid var(--border2);border-radius:4px;padding:1px 7px;cursor:pointer;color:var(--text3);font-size:11px;line-height:1.4;transition:all 0.15s" onmouseover="this.style.color=\'var(--danger)\';this.style.borderColor=\'var(--danger)\'" onmouseout="this.style.color=\'var(--text3)\';this.style.borderColor=\'var(--border2)\'">✕</button>';
     el.style.display = 'block';
   } else {
     el.style.display = 'none';
   }
+}
+
+function clearRef() {
+  refData = { debtors: {}, creditors: {}, meta: null };
+  if (currentOrg) saveRef(currentOrg.name, refData);
+  document.getElementById('ref-file-input').value = '';
+  updateRefInfo();
+  toast('ცნობარი გაუქმებულია', 'success');
 }
 
 // ─── ORG SCREEN ──────────────────────────────────────────────
@@ -1048,6 +1095,177 @@ function processRefFile(file) {
   document.getElementById('ref-file-input').value = '';
 }
 
+// ─── BANK DETECTION & SELECTION ─────────────────────────────
+function detectBankType(wb) {
+  if (wb.SheetNames[0] === 'Statement of Account') return 'bog';
+  return 'tbc';
+}
+
+function selectBank(bank) {
+  selectedBank = bank;
+  BANK_LABEL = bank === 'bog' ? 'BOG GEL' : 'TBC GEL';
+  document.getElementById('bank-btn-tbc').classList.toggle('active', bank === 'tbc');
+  document.getElementById('bank-btn-bog').classList.toggle('active', bank === 'bog');
+  const isBog = bank === 'bog';
+  const titleEl = document.getElementById('drop-title');
+  const subEl   = document.getElementById('drop-sub');
+  if (titleEl) titleEl.textContent = isBog ? 'საქართველოს ბანკის ამონაწერი' : 'TBC ამონაწერი';
+  if (subEl)   subEl.innerHTML = isBog
+    ? 'ჩააგდეთ ან აირჩიეთ BOG-ის <code>.xlsx</code> ბანკის ამონაწერი.<br>პროგრამა დაამუშავებს და გამოგიტანს რედაქტირებად ხედს.'
+    : 'ჩააგდეთ ან აირჩიეთ TBC-ის <code>.xlsx</code> ბანკის ამონაწერი.<br>პროგრამა დაამუშავებს და გამოგიტანს რედაქტირებად ხედს.';
+  const logo = document.getElementById('logo-title');
+  if (logo) logo.innerHTML = 'FINS <span style="color:var(--accent);font-style:italic">·</span> ' + (isBog ? 'BOG' : 'TBC') + ' იმპორტი';
+}
+
+function showMismatchModal(detected) {
+  const name = detected === 'bog' ? 'საქართველოს ბანკის' : 'TBC ბანკის';
+  const btn  = detected === 'bog' ? 'BOG' : 'TBC';
+  document.getElementById('mismatch-body').textContent = 'ატვირთავთ ' + name + ' ამონაწერს. გსურთ გაგრძელება?';
+  document.getElementById('mismatch-confirm-btn').textContent = 'გაგრძელება როგორც ' + btn;
+  document.getElementById('mismatch-modal').classList.add('visible');
+}
+
+function confirmBankMismatch() {
+  document.getElementById('mismatch-modal').classList.remove('visible');
+  if (!pendingFile) return;
+  const { wb, file } = pendingFile;
+  pendingFile = null;
+  const detected = detectBankType(wb);
+  selectBank(detected);
+  show('loading');
+  parseAndRender(wb, file, detected);
+}
+
+function cancelBankMismatch() {
+  document.getElementById('mismatch-modal').classList.remove('visible');
+  pendingFile = null;
+  document.getElementById('file-input').value = '';
+}
+
+// ─── SHARED ROW BUILDER ──────────────────────────────────────
+function buildRow({ date, txId, paidIn, paidOut, partner, partnerTax, partnerAcc, description, txType, addDesc }) {
+  const isIncome = paidIn > 0;
+  const amount   = isIncome ? paidIn : paidOut;
+  const mk       = partnerTax || partnerAcc || partner;
+  const danishnuleba = description.includes('გადასახადების ერთიანი კოდი') && addDesc ? addDesc : description;
+
+  let contraAcc   = '';
+  let contraLabel = partner;
+  if (partnerTax) {
+    if (!isIncome && refData.creditors[partnerTax]) { contraAcc = refData.creditors[partnerTax].acc; contraLabel = refData.creditors[partnerTax].name; }
+    else if (isIncome && refData.debtors[partnerTax]) { contraAcc = refData.debtors[partnerTax].acc; contraLabel = refData.debtors[partnerTax].name; }
+  }
+  if (!contraAcc && mk && accountMemory[mk]) { contraAcc = accountMemory[mk].contra; contraLabel = accountMemory[mk].contraLabel || contraLabel; }
+
+  return {
+    date, txId,
+    debitAcc:    isIncome ? bankAccount : contraAcc,
+    debitLabel:  isIncome ? BANK_LABEL   : contraLabel,
+    creditAcc:   isIncome ? contraAcc    : bankAccount,
+    creditLabel: isIncome ? contraLabel  : BANK_LABEL,
+    amount, currency: 'GEL', rate: 1,
+    danishnuleba,
+    partner, partnerTax, partnerAcc,
+    txType, isIncome, memKey: mk,
+    locked_debit: isIncome, locked_credit: !isIncome,
+  };
+}
+
+// ─── PARSERS ─────────────────────────────────────────────────
+function parseTbcRows(raw) {
+  const result = []; let count = 0; let demoTruncated = false;
+  for (let i = 2; i < raw.length; i++) {
+    const r = raw[i];
+    if (!r[0]) continue;
+    const paidOut = parseFloat(r[3]) || 0;
+    const paidIn  = parseFloat(r[4]) || 0;
+    if (paidOut === 0 && paidIn === 0) continue;
+    if (currentOrg.isDemo && count >= DEMO_LIMIT) { demoTruncated = true; break; }
+    count++;
+    result.push(buildRow({
+      date: r[0], txId: '',
+      paidIn, paidOut,
+      partner:     (r[10] || '').trim(),
+      partnerTax:  (r[11] || '').trim(),
+      partnerAcc:  (r[9]  || '').trim(),
+      description: (r[1]  || '').trim(),
+      txType:      (r[6]  || '').trim(),
+      addDesc:     (r[21] || '').trim(),
+    }));
+  }
+  return { result, demoTruncated };
+}
+
+function parseBogRows(raw) {
+  const result = []; let count = 0; let demoTruncated = false;
+  for (let i = 10; i < raw.length; i++) {
+    const r = raw[i];
+    if (!r[0]) continue;
+    // Comma is thousands separator (1,320.00 → 1320.00) — remove it, don't replace with dot
+    const paidOut = parseFloat(String(r[3] || '').replace(/\s/g,'').replace(/,/g,'')) || 0;
+    const paidIn  = parseFloat(String(r[4] || '').replace(/\s/g,'').replace(/,/g,'')) || 0;
+    if (paidOut === 0 && paidIn === 0) continue;
+    if (currentOrg.isDemo && count >= DEMO_LIMIT) { demoTruncated = true; break; }
+    count++;
+    const isIncome = paidIn > 0;
+    const txType   = (r[6] || '').trim();
+    const isCom    = txType === 'COM';
+
+    // Debtors: cols I(8)=name, J(9)=taxId; Creditors: cols O(14)=name, P(15)=taxId
+    // COM = commission → auto-label as საკომისიო
+    const partner    = isCom ? 'საკომისიო' : (isIncome ? (r[8]  || '').trim() : (r[14] || '').trim());
+    const partnerTax = isCom ? ''           : (isIncome ? (r[9]  || '').trim() : (r[15] || '').trim());
+
+    result.push(buildRow({
+      date: r[0], txId: '', // document field empty (editable)
+      paidIn, paidOut,
+      partner, partnerTax,
+      partnerAcc:  '',
+      description: (r[19] || '').trim(), // T field = დანიშნულება
+      txType,
+      addDesc:     '',
+    }));
+  }
+  return { result, demoTruncated };
+}
+
+// ─── PARSE + RENDER ──────────────────────────────────────────
+function parseAndRender(wb, file, bank) {
+  setLoading('მონაცემების დამუშავება...');
+  BANK_LABEL = bank === 'bog' ? 'BOG GEL' : 'TBC GEL';
+  let parseResult;
+
+  try {
+    if (bank === 'bog') {
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+      if (!raw[9] || raw[9].length < 5) {
+        show('dropzone');
+        toast('ფაილი არ შეესაბამება საქართველოს ბანკის ამონაწერის ფორმატს.', 'error');
+        return;
+      }
+      parseResult = parseBogRows(raw);
+    } else {
+      const sheetName = wb.SheetNames.find(n => n !== 'Summary') || wb.SheetNames[1] || wb.SheetNames[0];
+      const ws  = wb.Sheets[sheetName];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+      const hasEnoughCols = raw.length > 0 && raw[0] && raw[0].length >= 3;
+      const hasDataRows   = raw.length > 2 && raw.slice(2).some(r => r && r[0]);
+      if (!hasEnoughCols || !hasDataRows) {
+        show('dropzone');
+        toast('ფაილი არ შეესაბამება TBC ბანკის ამონაწერის ფორმატს.', 'error');
+        return;
+      }
+      parseResult = parseTbcRows(raw);
+    }
+  } catch(err) { show('dropzone'); toast('შეცდომა: ' + err.message, 'error'); return; }
+
+  rows = parseResult.result;
+  if (parseResult.demoTruncated) toast(`Demo: მხოლოდ პირველი ${DEMO_LIMIT} ჩანაწერი ჩაიტვირთა`, 'error');
+  setLoading('ცხრილის გენერაცია...');
+  setTimeout(() => { renderTable(); updateMeta(file.name); show('editor'); }, 50);
+}
+
 // ─── FILE PROCESSING ─────────────────────────────────────────
 function processFile(file) {
   if (!currentOrg) { toast('ჯერ ორგანიზაცია აირჩიეთ', 'error'); return; }
@@ -1055,86 +1273,15 @@ function processFile(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      setLoading('მონაცემების დამუშავება...');
       const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
-      const sheetName = wb.SheetNames.find(n => n !== 'Summary') || wb.SheetNames[1];
-      const ws = wb.Sheets[sheetName];
-      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
-
-      // Validate TBC format
-      const hasEnoughCols = raw.length > 0 && raw[0] && raw[0].length >= 3;
-      const hasDataRows   = raw.length > 2 && raw.slice(2).some(r => r && r[0]);
-      if (!hasEnoughCols || !hasDataRows) {
+      const detected = detectBankType(wb);
+      if (detected !== selectedBank) {
+        pendingFile = { wb, file };
         show('dropzone');
-        toast('ფაილი არ შეესაბამება TBC ბანკის ამონაწერის ფორმატს. გთხოვთ ატვირთოთ TBC-ის .xlsx ამონაწერი (სხვა ფაილები მხარდაჭერილი არ არის).', 'error');
-        return;
+        showMismatchModal(detected);
+      } else {
+        parseAndRender(wb, file, selectedBank);
       }
-
-      rows = [];
-      let count = 0;
-      let demoTruncated = false;
-
-      for (let i = 2; i < raw.length; i++) {
-        const r = raw[i];
-        if (!r[0]) continue;
-        const paidOut = parseFloat(r[3]) || 0;
-        const paidIn  = parseFloat(r[4]) || 0;
-        if (paidOut === 0 && paidIn === 0) continue;
-
-        if (currentOrg.isDemo && count >= DEMO_LIMIT) { demoTruncated = true; break; }
-        count++;
-
-        const isIncome   = paidIn > 0;
-        const amount     = isIncome ? paidIn : paidOut;
-        const partner    = (r[10] || '').trim();
-        const partnerTax = (r[11] || '').trim();
-        const partnerAcc = (r[9]  || '').trim();
-        const description= (r[1]  || '').trim();
-        const txId       = '';
-        const txType     = (r[6]  || '').trim();
-        const mk         = partnerTax || partnerAcc || partner;
-
-        const addDesc      = (r[21] || '').trim();
-        const danishnuleba = description.includes('გადასახადების ერთიანი კოდი') && addDesc ? addDesc : description;
-
-        let contraAcc   = '';
-        let contraLabel = partner;
-
-        // Reference Excel lookup by partnerTax
-        if (partnerTax) {
-          if (!isIncome && refData.creditors[partnerTax]) {
-            contraAcc   = refData.creditors[partnerTax].acc;
-            contraLabel = refData.creditors[partnerTax].name;
-          } else if (isIncome && refData.debtors[partnerTax]) {
-            contraAcc   = refData.debtors[partnerTax].acc;
-            contraLabel = refData.debtors[partnerTax].name;
-          }
-        }
-
-        // Fallback to accountMemory
-        if (!contraAcc && mk && accountMemory[mk]) {
-          contraAcc   = accountMemory[mk].contra;
-          contraLabel = accountMemory[mk].contraLabel || contraLabel;
-        }
-
-        rows.push({
-          date: r[0], txId,
-          debitAcc:    isIncome ? bankAccount : contraAcc,
-          debitLabel:  isIncome ? BANK_LABEL   : contraLabel,
-          creditAcc:   isIncome ? contraAcc    : bankAccount,
-          creditLabel: isIncome ? contraLabel  : BANK_LABEL,
-          amount, currency: 'GEL', rate: 1,
-          danishnuleba,
-          partner, partnerTax, partnerAcc,
-          txType, isIncome, memKey: mk,
-          locked_debit: isIncome, locked_credit: !isIncome,
-        });
-      }
-
-      if (demoTruncated) toast(`Demo: მხოლოდ პირველი ${DEMO_LIMIT} ჩანაწერი ჩაიტვირთა`, 'error');
-
-      setLoading('ცხრილის გენერაცია...');
-      setTimeout(() => { renderTable(); updateMeta(file.name); show('editor'); }, 50);
     } catch(err) { show('dropzone'); toast('შეცდომა: ' + err.message, 'error'); }
   };
   reader.readAsArrayBuffer(file);
@@ -1314,14 +1461,14 @@ function doExport(fmt) {
     const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `FINS_TBC_${slug}.csv`;
+    a.download = `FINS_${selectedBank.toUpperCase()}_${slug}.csv`;
     a.click();
   } else {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([FINS_HEADERS, ...exportRows]);
     ws['!cols'] = [14,18,13,22,13,22,12,8,7,8,8,10,45,12,10,10,14].map(w=>({wch:w}));
     XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-    XLSX.writeFile(wb, `FINS_TBC_${slug}.xlsx`);
+    XLSX.writeFile(wb, `FINS_${selectedBank.toUpperCase()}_${slug}.xlsx`);
   }
   toast('წარმატებით გადმოწერილია ✓', 'success');
 }
@@ -1329,6 +1476,7 @@ function doExport(fmt) {
 // ─── HELPERS ─────────────────────────────────────────────────
 function fmtExportDate(d) {
   if (!d) return '';
+  if (typeof d === 'string' && /^\d{2}\.\d{2}\.\d{4}$/.test(d)) return d; // already dd.mm.yyyy
   const dt = (d instanceof Date) ? d : new Date(d);
   if (isNaN(dt)) return String(d);
   const dd = String(dt.getDate()).padStart(2,'0');
@@ -1338,6 +1486,7 @@ function fmtExportDate(d) {
 }
 function formatDate(d) {
   if (!d) return '';
+  if (typeof d === 'string' && /^\d{2}\.\d{2}\.\d{4}$/.test(d)) return d; // BOG: dd.mm.yyyy
   if (typeof d === 'string') return d.slice(0,10);
   return new Date(d).toLocaleDateString('ka-GE',{day:'2-digit',month:'2-digit',year:'numeric'});
 }
@@ -1474,6 +1623,15 @@ const incompleteFilterState = {};
 function filterIncomplete(colIdx) {
   incompleteFilterState[colIdx] = !incompleteFilterState[colIdx];
   const isActive = incompleteFilterState[colIdx];
+  // Mutual exclusion: deactivate the other filter when activating this one
+  if (isActive) {
+    const other = colIdx === 2 ? 4 : 2;
+    if (incompleteFilterState[other]) {
+      incompleteFilterState[other] = false;
+      const otherBtn = document.getElementById('fi-btn-' + other);
+      if (otherBtn) { otherBtn.textContent = '☐'; otherBtn.style.color = 'var(--text3)'; otherBtn.style.borderColor = 'var(--border2)'; }
+    }
+  }
   const btn = document.getElementById('fi-btn-' + colIdx);
   if (btn) {
     btn.textContent = isActive ? '☑' : '☐';

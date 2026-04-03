@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [error, setError]           = useState('')
   const [loading, setLoading]       = useState(false)
   const [savedEmails, setSavedEmails] = useState<string[]>([])
+  const [showPw, setShowPw]           = useState(false)
 
   useEffect(() => {
     try {
@@ -86,14 +87,30 @@ export default function LoginPage() {
               დამავიწყდა პაროლი?
             </Link>
           </div>
-          <input
-            className={`input ${error ? 'error' : ''}`}
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              className={`input ${error ? 'error' : ''}`}
+              type={showPw ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              style={{ paddingRight: '44px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(v => !v)}
+              style={{
+                position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text3)', fontSize: '16px', lineHeight: 1, padding: '2px',
+              }}
+              tabIndex={-1}
+              aria-label={showPw ? 'პაროლის დამალვა' : 'პაროლის ჩვენება'}
+            >
+              {showPw ? '🙈' : '👁'}
+            </button>
+          </div>
         </div>
 
         {error && (

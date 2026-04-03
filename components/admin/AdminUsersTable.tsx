@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Organization, OrgRequest } from '@/lib/types'
 
@@ -21,7 +21,10 @@ function getDaysRemaining(expiresAt: string | null): number | null {
 }
 
 function fmtDate(d: string) {
-  return new Date(d).toLocaleDateString('ka-GE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const dt = new Date(d)
+  const dd = String(dt.getDate()).padStart(2, '0')
+  const mm = String(dt.getMonth() + 1).padStart(2, '0')
+  return `${dd}.${mm}.${dt.getFullYear()}`
 }
 
 export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRelations[] }) {
@@ -32,6 +35,17 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
   const [search, setSearch]         = useState('')
   const [reqLoading, setReqLoading] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+  const [daysMap, setDaysMap] = useState<Record<string, number | null>>({})
+
+  useEffect(() => {
+    const map: Record<string, number | null> = {}
+    for (const p of profiles) {
+      for (const org of p.organizations) {
+        map[org.id] = getDaysRemaining(org.expires_at)
+      }
+    }
+    setDaysMap(map)
+  }, [profiles])
 
   async function handleDeleteOrg(orgId: string, orgName: string) {
     if (!window.confirm(`წაიშალოს ორგანიზაცია "${orgName}"?`)) return
@@ -252,7 +266,7 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: pendingReqs.length > 0 ? '20px' : '0' }}>
                           {profile.organizations.map(org => {
-                            const days = getDaysRemaining(org.expires_at)
+                            const days = daysMap[org.id] ?? null
                             const dayColor = !days ? undefined : days > 60 ? 'var(--accent2)' : days > 30 ? 'var(--warn)' : 'var(--danger)'
                             return (
                               <div key={org.id} style={{

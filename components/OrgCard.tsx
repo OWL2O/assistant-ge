@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Organization } from '@/lib/types'
 
@@ -12,11 +14,6 @@ function getDaysRemaining(expiresAt: string | null): number | null {
 function CountdownBar({ days }: { days: number }) {
   const pct = Math.max(0, Math.min(100, (days / 365) * 100))
   const color = days > 60 ? 'var(--accent2)' : days > 30 ? 'var(--warn)' : 'var(--danger)'
-  const shadow = days > 60
-    ? '0 0 8px rgba(52,211,153,0.4)'
-    : days > 30
-    ? '0 0 8px rgba(251,191,36,0.4)'
-    : '0 0 8px rgba(251,113,133,0.4)'
   return (
     <div style={{ marginTop: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -39,7 +36,17 @@ function CountdownBar({ days }: { days: number }) {
 }
 
 export default function OrgCard({ org }: { org: Organization }) {
-  const days = getDaysRemaining(org.expires_at)
+  const router = useRouter()
+  const [editing, setEditing] = useState(false)
+  const [draftName, setDraftName] = useState(org.name)
+  const [saving, setSaving] = useState(false)
+  const [renameError, setRenameError] = useState('')
+
+  const [days, setDays] = useState<number | null>(null)
+  useEffect(() => {
+    setDays(getDaysRemaining(org.expires_at))
+  }, [org.expires_at])
+
   const isExpired = !org.is_demo && !org.is_active
   const isActive = !org.is_demo && org.is_active
 
@@ -48,6 +55,33 @@ export default function OrgCard({ org }: { org: Organization }) {
     : isActive
     ? 'rgba(26,122,74,0.18)'
     : 'var(--border)'
+
+  async function saveRename() {
+    const trimmed = draftName.trim()
+    if (!trimmed || trimmed === org.name) { cancelEdit(); return }
+    setSaving(true)
+    setRenameError('')
+    try {
+      const res = await fetch('/api/organizations/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orgId: org.id, name: trimmed }),
+      })
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'შეცდომა') }
+      setEditing(false)
+      router.refresh()
+    } catch (e: unknown) {
+      setRenameError(e instanceof Error ? e.message : 'შეცდომა')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function cancelEdit() {
+    setEditing(false)
+    setDraftName(org.name)
+    setRenameError('')
+  }
 
   return (
     <div
@@ -63,7 +97,7 @@ export default function OrgCard({ org }: { org: Organization }) {
     >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px', position: 'relative' }}>
-        <div>
+        <div style={{ flex: 1, minWidth: 0, marginRight: '10px' }}>
           <div style={{
             fontSize: '10px', fontFamily: 'DM Mono, monospace',
             color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em',
@@ -71,9 +105,71 @@ export default function OrgCard({ org }: { org: Organization }) {
           }}>
             {org.is_demo ? 'Demo' : 'Org'}
           </div>
-          <div style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', letterSpacing: '-0.2px' }}>
-            {org.name}
-          </div>
+
+          {editing ? (
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input
+                  autoFocus
+                  value={draftName}
+                  onChange={e => setDraftName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveRename(); if (e.key === 'Escape') cancelEdit() }}
+                  disabled={saving}
+                  style={{
+                    flex: 1, background: 'var(--surface2)', border: '1px solid var(--accent)',
+                    borderRadius: '6px', padding: '4px 8px', color: 'var(--text)',
+                    fontWeight: 600, fontSize: '14px', outline: 'none',
+                    boxShadow: '0 0 0 2px rgba(108,142,255,0.15)', minWidth: 0,
+                  }}
+                />
+                <button
+                  onClick={saveRename}
+                  disabled={saving}
+                  style={{
+                    background: 'var(--accent)', border: 'none', borderRadius: '6px',
+                    padding: '4px 10px', color: '#fff', fontSize: '12px', fontWeight: 500,
+                    cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1,
+                    flexShrink: 0,
+                  }}
+                >
+                  {saving ? '…' : '✓'}
+                </button>
+                <button
+                  onClick={cancelEdit}
+                  disabled={saving}
+                  style={{
+                    background: 'var(--surface2)', border: '1px solid var(--border2)',
+                    borderRadius: '6px', padding: '4px 8px', color: 'var(--text2)',
+                    fontSize: '12px', cursor: 'pointer', flexShrink: 0,
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+              {renameError && (
+                <div style={{ fontSize: '11px', color: 'var(--danger)', marginTop: '4px' }}>{renameError}</div>
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ fontWeight: 600, fontSize: '16px', color: 'var(--text)', letterSpacing: '-0.2px' }}>
+                {org.name}
+              </div>
+              <button
+                onClick={() => { setDraftName(org.name); setEditing(true) }}
+                title="სახელის შეცვლა"
+                style={{
+                  background: 'none', border: 'none', padding: '2px 5px',
+                  cursor: 'pointer', color: 'var(--text3)', fontSize: '13px',
+                  borderRadius: '4px', lineHeight: 1, flexShrink: 0,
+                }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text2)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text3)')}
+              >
+                ✎
+              </button>
+            </div>
+          )}
         </div>
         <span className={`badge ${org.is_demo ? 'badge-demo' : isExpired ? 'badge-expired' : 'badge-active'}`}>
           {org.is_demo ? 'Demo' : isExpired ? 'ვადაგასული' : 'აქტიური'}
