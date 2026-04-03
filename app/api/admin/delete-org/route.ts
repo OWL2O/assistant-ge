@@ -7,22 +7,17 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Use admin client to bypass RLS
   const admin = createAdminClient()
   const { data: profile } = await admin
     .from('profiles').select('is_admin').eq('id', user.id).single()
   if (!profile?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { orgId, name } = await request.json()
-  if (!orgId || !name?.trim()) return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
-
-  const { data: org } = await admin
-    .from('organizations').select('is_demo').eq('id', orgId).single()
-  if (org?.is_demo) return NextResponse.json({ error: 'Demo ორგანიზაციის სახელი არ შეიძლება შეიცვალოს' }, { status: 400 })
+  const { orgId } = await request.json()
+  if (!orgId) return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
 
   const { error } = await admin
     .from('organizations')
-    .update({ name: name.trim() })
+    .delete()
     .eq('id', orgId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

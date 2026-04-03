@@ -31,6 +31,19 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
   const [nameModal, setNameModal]   = useState<{ profile: ProfileWithRelations; org: Organization } | null>(null)
   const [search, setSearch]         = useState('')
   const [reqLoading, setReqLoading] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
+
+  async function handleDeleteOrg(orgId: string, orgName: string) {
+    if (!window.confirm(`წაიშალოს ორგანიზაცია "${orgName}"?`)) return
+    setDeleteLoading(orgId)
+    await fetch('/api/admin/delete-org', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orgId }),
+    })
+    setDeleteLoading(null)
+    router.refresh()
+  }
 
   async function handleRequest(requestId: string, action: 'approve' | 'reject') {
     setReqLoading(requestId)
@@ -111,14 +124,24 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                     {/* User */}
                     <td className="primary">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                          width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                          background: 'rgba(45,91,227,0.1)',
-                          border: '1px solid rgba(45,91,227,0.2)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '11px', fontWeight: 600, color: 'var(--accent)',
-                        }}>
-                          {(profile.full_name || profile.email)[0].toUpperCase()}
+                        <div style={{ position: 'relative', flexShrink: 0 }}>
+                          <div style={{
+                            width: '28px', height: '28px', borderRadius: '50%',
+                            background: 'rgba(45,91,227,0.1)',
+                            border: '1px solid rgba(45,91,227,0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '11px', fontWeight: 600, color: 'var(--accent)',
+                          }}>
+                            {(profile.full_name || profile.email)[0].toUpperCase()}
+                          </div>
+                          {pendingReqs.length > 0 && (
+                            <div style={{
+                              position: 'absolute', top: '-2px', right: '-2px',
+                              width: '8px', height: '8px', borderRadius: '50%',
+                              background: 'var(--warn)',
+                              border: '1.5px solid var(--surface)',
+                            }} />
+                          )}
                         </div>
                         <div>
                           <div style={{ fontWeight: 500, fontSize: '13px' }}>{profile.full_name || '—'}</div>
@@ -273,6 +296,14 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
                                     სახელი
                                   </button>
                                 )}
+                                <button
+                                  className="btn btn-danger btn-sm"
+                                  onClick={() => handleDeleteOrg(org.id, org.name)}
+                                  disabled={deleteLoading === org.id}
+                                  style={{ fontSize: '11px', padding: '3px 10px' }}
+                                >
+                                  წაშლა
+                                </button>
                               </div>
                             )
                           })}

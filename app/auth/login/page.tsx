@@ -80,7 +80,12 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <label style={labelStyle}>პაროლი</label>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+            <label style={{ ...labelStyle, marginBottom: 0 }}>პაროლი</label>
+            <Link href="/auth/forgot-password" style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'DM Mono, monospace' }}>
+              დამავიწყდა პაროლი?
+            </Link>
+          </div>
           <input
             className={`input ${error ? 'error' : ''}`}
             type="password"

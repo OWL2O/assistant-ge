@@ -36,7 +36,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             marginTop: '12px',
             letterSpacing: '0.05em',
           }}>
-            +995 555 40 41 57
+            +995 555 28 94 44
           </p>
         </div>
         {children}

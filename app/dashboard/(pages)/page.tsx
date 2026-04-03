@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import OrgCard from '@/components/OrgCard'
-import RequestOrgButton from '@/components/RequestOrgButton'
+import RequestSection from '@/components/RequestSection'
 import CreateOrgForm from '@/components/CreateOrgForm'
 import type { Organization } from '@/lib/types'
 
@@ -134,71 +134,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Request section */}
-      <div style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-xl)',
-        padding: '32px',
-        position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{
-            fontSize: '10px', fontFamily: 'DM Mono, monospace',
-            color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em',
-            marginBottom: '8px',
-          }}>
-            მოთხოვნა
-          </div>
-          <h2 style={{
-            fontFamily: 'Instrument Serif, serif', fontSize: '22px',
-            letterSpacing: '-0.3px', marginBottom: '10px',
-          }}>
-            ახალი ორგანიზაციის მოთხოვნა
-          </h2>
-          <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.7, maxWidth: '540px' }}>
-            ახალი ორგანიზაციის გასახსნელად საჭიროა{' '}
-            <span style={{ color: 'var(--text)', fontWeight: 600 }}>100 ₾</span>-ის გადახდა
-            და ადმინის დამტკიცება.
-          </p>
-        </div>
-
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: '8px',
-          padding: '8px 16px', borderRadius: 'var(--radius-sm)',
-          background: 'var(--surface2)', border: '1px solid var(--border)',
-          marginBottom: '24px',
-        }}>
-          <div style={{
-            width: '4px', height: '4px', borderRadius: '50%',
-            background: 'var(--text3)',
-          }} />
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '12px', color: 'var(--text3)' }}>
-            გადახდა:{' '}
-          </span>
-          <a
-            href="tel:+995555404157"
-            style={{
-              fontFamily: 'DM Mono, monospace', fontSize: '12px',
-              color: 'var(--text2)', letterSpacing: '0.04em',
-            }}
-          >
-            +995 555 40 41 57
-          </a>
-        </div>
-
-        {pendingReq && (
-          <div className="notification-banner notification-banner--info" style={{ marginBottom: '20px' }}>
-            <div className="notification-banner__icon" style={{ color: 'var(--accent)' }}>i</div>
-            <div>
-              <div className="notification-banner__body">
-                გაქვთ განხილვის პროცესში მყოფი მოთხოვნა. შეგიძლიათ გააგზავნოთ კიდევ ერთი.
-              </div>
-            </div>
-          </div>
-        )}
-
-        <RequestOrgButton hasPending={false} />
-      </div>
+      <RequestSection hasPending={!!pendingReq} />
     </div>
   )
 }
