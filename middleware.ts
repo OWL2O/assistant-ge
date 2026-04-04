@@ -1,5 +1,4 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -33,28 +32,6 @@ export async function middleware(request: NextRequest) {
   // Logged in → don't show auth pages
   if (user && path.startsWith('/auth')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  // Admin route protection
-  if (path.startsWith('/admin')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url))
-    }
-    // Check is_admin from profiles (use service role to bypass RLS)
-    const adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { autoRefreshToken: false, persistSession: false } }
-    )
-    const { data: profile } = await adminClient
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.is_admin) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
   }
 
   return supabaseResponse
