@@ -17,10 +17,10 @@ function saveEmail(email: string) {
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail]           = useState('')
-  const [password, setPassword]     = useState('')
-  const [error, setError]           = useState('')
-  const [loading, setLoading]       = useState(false)
+  const [email, setEmail]             = useState('')
+  const [password, setPassword]       = useState('')
+  const [error, setError]             = useState('')
+  const [loading, setLoading]         = useState(false)
   const [savedEmails, setSavedEmails] = useState<string[]>([])
   const [showPw, setShowPw]           = useState(false)
 
@@ -51,22 +51,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="card fade-in">
-      <h2 style={{
-        fontFamily: 'Instrument Serif, serif', fontSize: '24px',
-        marginBottom: '4px', letterSpacing: '-0.3px',
-      }}>
-        შესვლა
-      </h2>
-      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '32px' }}>
-        სისტემაში შესასვლელად შეიყვანეთ თქვენი მონაცემები
-      </p>
+    <div className="fade-in">
 
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Heading */}
+      <div style={{ marginBottom: '48px' }}>
+        <h2 style={{
+          fontFamily: 'Instrument Serif, serif',
+          fontSize: '28px', letterSpacing: '-0.5px',
+          color: 'var(--text)', marginBottom: '8px',
+        }}>
+          შესვლა
+        </h2>
+        <p style={{ fontSize: '13px', color: 'var(--text3)', lineHeight: 1.6 }}>
+          სისტემაში შესასვლელად შეიყვანეთ თქვენი მონაცემები
+        </p>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
+        {/* Email */}
         <div>
           <label style={labelStyle}>ელ-ფოსტა</label>
           <input
-            className={`input ${error ? 'error' : ''}`}
+            className={`input-line ${error ? 'error' : ''}`}
             type="email"
             placeholder="you@example.com"
             value={email}
@@ -80,30 +88,36 @@ export default function LoginPage() {
           </datalist>
         </div>
 
+        {/* Password */}
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
             <label style={{ ...labelStyle, marginBottom: 0 }}>პაროლი</label>
-            <Link href="/auth/forgot-password" style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'DM Mono, monospace' }}>
-              დამავიწყდა პაროლი?
+            <Link href="/auth/forgot-password" style={{
+              fontSize: '11px', color: 'var(--text3)',
+              fontFamily: 'DM Mono, monospace',
+              letterSpacing: '0.02em',
+              transition: 'color 0.15s',
+            }}>
+              დამავიწყდა
             </Link>
           </div>
           <div style={{ position: 'relative' }}>
             <input
-              className={`input ${error ? 'error' : ''}`}
+              className={`input-line ${error ? 'error' : ''}`}
               type={showPw ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              style={{ paddingRight: '44px' }}
+              style={{ paddingRight: '36px' }}
             />
             <button
               type="button"
               onClick={() => setShowPw(v => !v)}
               style={{
-                position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)',
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--text3)', fontSize: '16px', lineHeight: 1, padding: '2px',
+                color: 'var(--text3)', fontSize: '15px', lineHeight: 1, padding: '2px',
               }}
               tabIndex={-1}
               aria-label={showPw ? 'პაროლის დამალვა' : 'პაროლის ჩვენება'}
@@ -113,42 +127,56 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Error */}
         {error && (
           <div style={{
-            fontSize: '13px', color: 'var(--danger)',
-            padding: '12px 16px',
-            background: 'rgba(192,57,43,0.06)',
-            border: '1px solid rgba(192,57,43,0.15)',
-            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px', color: 'var(--danger)',
+            display: 'flex', alignItems: 'center', gap: '7px',
           }}>
+            <span style={{
+              display: 'inline-block', width: '4px', height: '4px',
+              borderRadius: '50%', background: 'var(--danger)', flexShrink: 0,
+            }} />
             {error}
           </div>
         )}
 
+        {/* Submit */}
         <button
           className="btn btn-primary btn-lg"
           type="submit"
           disabled={loading}
-          style={{ justifyContent: 'center', marginTop: '4px' }}
+          style={{ justifyContent: 'center', marginTop: '8px', width: '100%' }}
         >
-          {loading ? 'შესვლა...' : 'შესვლა'}
+          {loading ? 'შემოწმება...' : 'შესვლა'}
         </button>
       </form>
 
-      <div className="divider" style={{ margin: '28px 0' }} />
-
-      <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)' }}>
+      {/* Register link */}
+      <div style={{
+        marginTop: '40px',
+        paddingTop: '24px',
+        borderTop: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'center', gap: '6px',
+        fontSize: '13px', color: 'var(--text3)',
+      }}>
         ანგარიში არ გაქვთ?{' '}
-        <Link href="/auth/register" style={{ color: 'var(--accent)', fontWeight: 500 }}>
+        <Link href="/auth/register" style={{
+          color: 'var(--accent)', fontWeight: 500,
+        }}>
           რეგისტრაცია
         </Link>
-      </p>
+      </div>
     </div>
   )
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '12px', color: 'var(--text2)',
-  marginBottom: '8px', fontFamily: 'DM Mono, monospace',
-  textTransform: 'uppercase', letterSpacing: '0.04em',
+  display: 'block',
+  fontSize: '10px',
+  color: 'var(--text3)',
+  marginBottom: '10px',
+  fontFamily: 'DM Mono, monospace',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
 }

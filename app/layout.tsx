@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'ASSISTANTS.ge',
-  description: 'TBC ბანკის ამონაწერის იმპორტი FINS-ში',
+  description: 'TBC და BOG ბანკების ამონაწერების იმპორტი FINS-ში',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

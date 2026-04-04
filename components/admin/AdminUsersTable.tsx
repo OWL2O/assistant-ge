@@ -132,7 +132,13 @@ export default function AdminUsersTable({ profiles }: { profiles: ProfileWithRel
               return (
                 <Fragment key={profile.id}>
                   <tr
-                    style={{ cursor: 'pointer' }}
+                    style={{
+                      cursor: 'pointer',
+                      ...(pendingReqs.length > 0 && {
+                        background: 'rgba(251,191,36,0.04)',
+                        boxShadow: 'inset 3px 0 0 var(--warn)',
+                      }),
+                    }}
                     onClick={() => setExpanded(isExpanded ? null : profile.id)}
                   >
                     {/* User */}

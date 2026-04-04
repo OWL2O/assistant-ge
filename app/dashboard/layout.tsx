@@ -18,9 +18,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const profile = await getProfile(user.id)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="app-shell">
       <DashboardHeader profile={profile} />
-      {children}
+      <div className="app-main">
+        {children}
+      </div>
     </div>
   )
 }

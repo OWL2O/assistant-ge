@@ -5,10 +5,15 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
 
+type NavItem = {
+  label: string
+  href: string
+  icon: string
+}
+
 export default function DashboardHeader({ profile }: { profile: Profile | null }) {
   const router   = useRouter()
   const pathname = usePathname()
-  const dark     = pathname.startsWith('/dashboard/importer')
 
   async function handleLogout() {
     const supabase = createClient()
@@ -17,92 +22,162 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
     router.refresh()
   }
 
-  const bg         = dark ? '#16161c' : 'var(--surface)'
-  const border     = dark ? '#2a2a38' : 'var(--border)'
-  const textColor  = dark ? '#e8e8f0' : 'var(--text)'
-  const text2Color = dark ? '#8888aa' : 'var(--text2)'
-  const accent     = dark ? '#6c8eff' : 'var(--accent)'
-  const pillBg     = dark ? '#1e1e27' : 'var(--surface2)'
-  const pillBorder = dark ? '#2a2a38' : 'var(--border)'
-  const adminBg    = dark ? 'rgba(108,142,255,0.08)' : 'rgba(45,91,227,0.07)'
-  const adminBorder= dark ? 'rgba(108,142,255,0.2)'  : 'rgba(45,91,227,0.2)'
-  const btnBg      = dark ? '#1e1e27' : 'var(--surface)'
-  const btnBorder  = dark ? '#2a2a38' : 'var(--border2)'
+  const navItems: NavItem[] = [
+    { label: 'ორგანიზაციები', href: '/dashboard', icon: '⊞' },
+  ]
+  if (profile?.is_admin) {
+    navItems.push({ label: 'ადმინი', href: '/admin', icon: '⚙' })
+  }
+
+  const initial = (profile?.full_name || profile?.email || '?')[0].toUpperCase()
+  const displayName = profile?.full_name || profile?.email || ''
 
   return (
-    <header style={{
-      background: bg,
-      borderBottom: `1px solid ${border}`,
-      position: 'sticky', top: 0, zIndex: 100,
-    }}>
+    <aside className="app-sidebar">
+
+      {/* ── Logo ── */}
       <div style={{
-        maxWidth: dark ? 'none' : '1200px', margin: '0 auto',
-        padding: '0 28px', height: '60px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '28px 24px 24px',
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        flexShrink: 0,
       }}>
-        {/* Logo */}
         <Link href="/dashboard">
           <span style={{
-            fontFamily: 'Instrument Serif, serif', fontSize: '20px',
-            letterSpacing: '-0.3px', color: textColor,
+            fontFamily: 'Instrument Serif, serif',
+            fontSize: '17px',
+            color: '#FFFFFF',
+            letterSpacing: '-0.3px',
+            lineHeight: 1,
           }}>
-            ASSISTANTS<span style={{ color: accent, fontStyle: 'italic' }}>.ge</span>
+            ASSISTANTS
+            <span style={{ color: 'rgba(108,142,255,0.8)', fontStyle: 'italic' }}>.ge</span>
           </span>
         </Link>
-
-        {/* Right */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {profile?.is_admin && (
-            <Link href="/admin" style={{
-              fontSize: '12px', color: accent,
-              fontFamily: 'DM Mono, monospace',
-              background: adminBg,
-              padding: '5px 14px', borderRadius: '20px',
-              border: `1px solid ${adminBorder}`,
-              transition: 'all 0.15s',
-              letterSpacing: '0.02em',
-            }}>
-              ადმინი
-            </Link>
-          )}
-
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '5px 14px', borderRadius: '20px',
-            background: pillBg, border: `1px solid ${pillBorder}`,
-          }}>
-            <div style={{
-              width: '20px', height: '20px', borderRadius: '50%',
-              background: accent,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '9px', fontWeight: 700, color: '#fff', flexShrink: 0,
-            }}>
-              {(profile?.full_name || profile?.email || '?')[0].toUpperCase()}
-            </div>
-            <span style={{
-              fontFamily: 'DM Mono, monospace', fontSize: '12px',
-              color: text2Color,
-              maxWidth: '160px', overflow: 'hidden',
-              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {profile?.full_name || profile?.email}
-            </span>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="btn btn-ghost btn-sm"
-            style={{
-              borderRadius: '20px',
-              background: btnBg,
-              border: `1px solid ${btnBorder}`,
-              color: text2Color,
-            }}
-          >
-            გასვლა
-          </button>
+        <div style={{
+          fontFamily: 'DM Mono, monospace',
+          fontSize: '9px',
+          color: 'rgba(255,255,255,0.2)',
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          marginTop: '6px',
+        }}>
+          TBC → FINS
         </div>
       </div>
-    </header>
+
+      {/* ── Navigation ── */}
+      <nav style={{
+        flex: 1,
+        padding: '16px 12px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '2px',
+        overflowY: 'auto',
+      }}>
+        {navItems.map(item => {
+          const isActive = item.href === '/dashboard'
+            ? pathname === '/dashboard' || (pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/importer'))
+            : pathname.startsWith(item.href)
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 12px',
+                borderRadius: '4px',
+                fontSize: '13px',
+                fontWeight: isActive ? 500 : 400,
+                color: isActive ? '#FFFFFF' : 'rgba(255,255,255,0.42)',
+                background: isActive ? 'rgba(255,255,255,0.07)' : 'transparent',
+                transition: 'all 0.15s ease',
+                textDecoration: 'none',
+              }}
+            >
+              <span style={{ fontSize: '14px', lineHeight: 1, width: '16px', textAlign: 'center', flexShrink: 0 }}>
+                {item.icon}
+              </span>
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* ── User + Logout ── */}
+      <div style={{
+        padding: '16px 12px',
+        borderTop: '1px solid rgba(255,255,255,0.05)',
+        flexShrink: 0,
+      }}>
+        {/* User row */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '8px 12px',
+          marginBottom: '8px',
+        }}>
+          <div style={{
+            width: '28px', height: '28px',
+            borderRadius: '4px',
+            background: 'rgba(108,142,255,0.2)',
+            border: '1px solid rgba(108,142,255,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '11px', fontWeight: 700,
+            color: 'rgba(108,142,255,0.9)',
+            flexShrink: 0,
+          }}>
+            {initial}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{
+              fontSize: '12px',
+              fontWeight: 500,
+              color: 'rgba(255,255,255,0.7)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
+              {displayName}
+            </div>
+          </div>
+        </div>
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '9px 12px',
+            borderRadius: '4px',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '13px',
+            color: 'rgba(255,255,255,0.28)',
+            transition: 'all 0.15s ease',
+            textAlign: 'left',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+            e.currentTarget.style.color = 'rgba(255,255,255,0.55)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent'
+            e.currentTarget.style.color = 'rgba(255,255,255,0.28)'
+          }}
+        >
+          <span style={{ fontSize: '13px', lineHeight: 1, width: '16px', textAlign: 'center', flexShrink: 0 }}>↩</span>
+          გასვლა
+        </button>
+      </div>
+
+    </aside>
   )
 }

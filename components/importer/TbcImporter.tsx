@@ -11,7 +11,7 @@ export default function TbcImporter({ org }: { org: Organization }) {
   return (
     <iframe
       src={`/importer.html?${params.toString()}`}
-      style={{ width: '100%', height: 'calc(100vh - 60px)', border: 'none', display: 'block' }}
+      style={{ width: '100%', height: '100vh', border: 'none', display: 'block' }}
     />
   )
 }

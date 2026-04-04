@@ -15,11 +15,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   if (!profile?.is_admin) redirect('/dashboard')
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div className="app-shell">
       <DashboardHeader profile={profile} />
-      <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
-        {children}
-      </main>
+      <div className="app-main" style={{ background: 'var(--bg)' }}>
+        <main style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 32px' }}>
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

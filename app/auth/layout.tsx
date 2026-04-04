@@ -1,46 +1,79 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px',
-      background: 'var(--bg)',
-      position: 'relative',
-      overflow: 'hidden',
-    }}>
-      <div style={{ width: '100%', maxWidth: '420px', position: 'relative', zIndex: 1 }}>
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+    <div className="auth-shell">
+
+      {/* ── Left panel: dark brand panel ── */}
+      <div className="auth-panel-left">
+
+        {/* Top: tag line */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{
+            fontFamily: 'DM Mono, monospace',
+            fontSize: '10px',
+            color: 'rgba(255,255,255,0.3)',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+          }}>
+            Financial Operations Platform
+          </div>
+        </div>
+
+        {/* Center: brand */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{
             fontFamily: 'Instrument Serif, serif',
-            fontSize: '36px',
-            letterSpacing: '-0.5px',
-            lineHeight: 1,
-            color: 'var(--text)',
+            fontSize: 'clamp(48px, 4.5vw, 68px)',
+            color: '#FFFFFF',
+            letterSpacing: '-1.5px',
+            lineHeight: 0.92,
+            marginBottom: '28px',
           }}>
-            ASSISTANTS<span style={{ color: 'var(--accent)', fontStyle: 'italic', fontWeight: 400 }}>.ge</span>
+            ASSISTANTS
+            <span style={{ color: 'rgba(108,142,255,0.85)', fontStyle: 'italic' }}>.ge</span>
           </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text3)', marginTop: '10px', letterSpacing: '0.04em' }}>
-            TBC → FINS იმპორტის პლატფორმა
-          </p>
           <div style={{
-            width: '40px', height: '1px', margin: '16px auto 0',
-            background: 'var(--border)',
+            width: '36px', height: '1.5px',
+            background: 'rgba(255,255,255,0.12)',
+            marginBottom: '24px',
+          }} />
+          <p style={{
+            fontSize: '13px',
+            color: 'rgba(255,255,255,0.38)',
+            lineHeight: 1.85,
+            maxWidth: '300px',
+            fontWeight: 300,
+            letterSpacing: '0.01em',
+          }}>
+            TBC და BOG ბანკების ამონაწერების ავტომატური
+            გარდაქმნა FINS სააღრიცხვო სისტემისთვის.
+          </p>
+        </div>
+
+        {/* Bottom: contact */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <div style={{
+            height: '1px',
+            background: 'rgba(255,255,255,0.06)',
+            marginBottom: '20px',
           }} />
           <p style={{
             fontFamily: 'DM Mono, monospace',
             fontSize: '11px',
-            color: 'var(--text3)',
-            marginTop: '12px',
-            letterSpacing: '0.05em',
+            color: 'rgba(255,255,255,0.2)',
+            letterSpacing: '0.1em',
           }}>
             +995 555 28 94 44
           </p>
         </div>
-        {children}
       </div>
+
+      {/* ── Right panel: form area ── */}
+      <div className="auth-panel-right">
+        <div style={{ width: '100%', maxWidth: '360px' }}>
+          {children}
+        </div>
+      </div>
+
     </div>
   )
 }

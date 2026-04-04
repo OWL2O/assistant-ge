@@ -60,24 +60,25 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="card fade-in" style={{ textAlign: 'center' }}>
+      <div className="fade-in" style={{ textAlign: 'center' }}>
         <div style={{
-          width: '56px', height: '56px', borderRadius: '50%',
-          background: 'rgba(45,91,227,0.08)',
-          border: '1px solid rgba(45,91,227,0.2)',
+          width: '48px', height: '48px',
+          borderRadius: '4px',
+          background: 'rgba(45,91,227,0.07)',
+          border: '1px solid rgba(45,91,227,0.15)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          margin: '0 auto 24px',
-          fontSize: '24px', color: 'var(--accent)',
+          margin: '0 auto 28px',
+          fontSize: '22px', color: 'var(--accent)',
         }}>
           ✉
         </div>
         <h2 style={{
-          fontFamily: 'Instrument Serif, serif', fontSize: '24px',
-          marginBottom: '12px', letterSpacing: '-0.3px',
+          fontFamily: 'Instrument Serif, serif',
+          fontSize: '26px', marginBottom: '14px', letterSpacing: '-0.4px',
         }}>
           გთხოვთ დაადასტურეთ მეილი
         </h2>
-        <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.7 }}>
+        <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.75 }}>
           გამოგიგზავნეთ დადასტურების ლინკი{' '}
           <b style={{ color: 'var(--text)' }}>{email}</b>-ზე.
           შეამოწმეთ inbox (ან spam).
@@ -85,7 +86,7 @@ export default function RegisterPage() {
         <p style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '12px' }}>
           დადასტურების შემდეგ შეგიძლიათ შეხვიდეთ სისტემაში.
         </p>
-        <Link href="/auth/login" className="btn btn-ghost" style={{ marginTop: '28px', display: 'inline-flex' }}>
+        <Link href="/auth/login" className="btn btn-ghost" style={{ marginTop: '32px', display: 'inline-flex' }}>
           ← შესვლის გვერდი
         </Link>
       </div>
@@ -93,22 +94,28 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="card fade-in">
-      <h2 style={{
-        fontFamily: 'Instrument Serif, serif', fontSize: '24px',
-        marginBottom: '4px', letterSpacing: '-0.3px',
-      }}>
-        რეგისტრაცია
-      </h2>
-      <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: '32px' }}>
-        შექმენით ანგარიში ASSISTANTS.ge-ზე
-      </p>
+    <div className="fade-in">
 
-      <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Heading */}
+      <div style={{ marginBottom: '48px' }}>
+        <h2 style={{
+          fontFamily: 'Instrument Serif, serif',
+          fontSize: '28px', letterSpacing: '-0.5px',
+          color: 'var(--text)', marginBottom: '8px',
+        }}>
+          რეგისტრაცია
+        </h2>
+        <p style={{ fontSize: '13px', color: 'var(--text3)', lineHeight: 1.6 }}>
+          შექმენით ანგარიში ASSISTANTS.ge-ზე
+        </p>
+      </div>
+
+      <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+
         <div>
           <label style={labelStyle}>სახელი და გვარი</label>
           <input
-            className="input"
+            className="input-line"
             type="text"
             placeholder="გიორგი მაისურაძე"
             value={fullName}
@@ -120,7 +127,7 @@ export default function RegisterPage() {
         <div>
           <label style={labelStyle}>ელ-ფოსტა</label>
           <input
-            className={`input ${error ? 'error' : ''}`}
+            className={`input-line ${error ? 'error' : ''}`}
             type="email"
             placeholder="you@example.com"
             value={email}
@@ -131,24 +138,41 @@ export default function RegisterPage() {
 
         <div>
           <label style={labelStyle}>პაროლი</label>
-          <input
-            className={`input ${error ? 'error' : ''}`}
-            type="password"
-            placeholder="მინიმუმ 8 სიმბოლო"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              className={`input-line ${error ? 'error' : ''}`}
+              type={showPw ? 'text' : 'password'}
+              placeholder="მინიმუმ 8 სიმბოლო"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              style={{ paddingRight: '36px' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(v => !v)}
+              style={{
+                position: 'absolute', right: '0', top: '50%', transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--text3)', fontSize: '15px', lineHeight: 1, padding: '2px',
+              }}
+              tabIndex={-1}
+              aria-label={showPw ? 'პაროლის დამალვა' : 'პაროლის ჩვენება'}
+            >
+              {showPw ? '🙈' : '👁'}
+            </button>
+          </div>
         </div>
 
         {error && (
           <div style={{
-            fontSize: '13px', color: 'var(--danger)',
-            padding: '12px 16px',
-            background: 'rgba(192,57,43,0.06)',
-            border: '1px solid rgba(192,57,43,0.15)',
-            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px', color: 'var(--danger)',
+            display: 'flex', alignItems: 'center', gap: '7px',
           }}>
+            <span style={{
+              display: 'inline-block', width: '4px', height: '4px',
+              borderRadius: '50%', background: 'var(--danger)', flexShrink: 0,
+            }} />
             {error}
           </div>
         )}
@@ -157,26 +181,34 @@ export default function RegisterPage() {
           className="btn btn-primary btn-lg"
           type="submit"
           disabled={loading}
-          style={{ justifyContent: 'center', marginTop: '4px' }}
+          style={{ justifyContent: 'center', marginTop: '8px', width: '100%' }}
         >
           {loading ? 'მიმდინარეობს...' : 'რეგისტრაცია'}
         </button>
       </form>
 
-      <div className="divider" style={{ margin: '28px 0' }} />
-
-      <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)' }}>
+      <div style={{
+        marginTop: '40px',
+        paddingTop: '24px',
+        borderTop: '1px solid var(--border)',
+        display: 'flex', justifyContent: 'center', gap: '6px',
+        fontSize: '13px', color: 'var(--text3)',
+      }}>
         უკვე გაქვთ ანგარიში?{' '}
         <Link href="/auth/login" style={{ color: 'var(--accent)', fontWeight: 500 }}>
           შესვლა
         </Link>
-      </p>
+      </div>
     </div>
   )
 }
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '12px', color: 'var(--text2)',
-  marginBottom: '8px', fontFamily: 'DM Mono, monospace',
-  textTransform: 'uppercase', letterSpacing: '0.04em',
+  display: 'block',
+  fontSize: '10px',
+  color: 'var(--text3)',
+  marginBottom: '10px',
+  fontFamily: 'DM Mono, monospace',
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
 }

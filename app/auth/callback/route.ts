@@ -10,6 +10,11 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (error) return NextResponse.redirect(`${origin}/auth/login?error=auth`)
+
+    const type = searchParams.get('type')
+    if (type === 'recovery') {
+      return NextResponse.redirect(`${origin}/auth/reset-password`)
+    }
   }
 
   return NextResponse.redirect(`${origin}${next}`)
