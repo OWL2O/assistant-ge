@@ -735,16 +735,16 @@
           <th></th>
         </tr>
         <tr class="filter-row">
-          <th><div class="filter-wrap"><input class="filter-input" data-col="0" placeholder="თარიღი..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="1" placeholder="ძებნა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="2" placeholder="ანგარიში..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="3" placeholder="დასახელება..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="4" placeholder="ანგარიში..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="5" placeholder="დასახელება..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="11" placeholder="ვალუტა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="6" placeholder="თანხა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="7" placeholder="ძებნა..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
-          <th><div class="filter-wrap"><input class="filter-input" data-col="8" placeholder="პარტნიორი..." oninput="onFilter(this)"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="0" placeholder="თარიღი..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="1" placeholder="ძებნა..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="2" placeholder="ანგარიში..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="3" placeholder="დასახელება..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="4" placeholder="ანგარიში..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="5" placeholder="დასახელება..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="11" placeholder="ვალუტა..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="6" placeholder="თანხა..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="7" placeholder="ძებნა..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
+          <th><div class="filter-wrap"><input class="filter-input" data-col="8" placeholder="პარტნიორი..." oninput="onFilter(this)" autocomplete="off"><button class="filter-clear" onclick="clearFilter(this)">✕</button></div></th>
           <th><div class="filter-wrap">
             <select class="filter-select" data-col="10" onchange="onFilter(this)">
               <option value="">ყველა</option>
@@ -1180,7 +1180,7 @@ function buildRow({ date, txId, paidIn, paidOut, partner, partnerTax, partnerAcc
     debitLabel:  isIncome ? BANK_LABEL   : contraLabel,
     creditAcc:   isIncome ? contraAcc    : bankAccount,
     creditLabel: isIncome ? contraLabel  : BANK_LABEL,
-    amount, currency: 'GEL', rate: 1,
+    amount, currency: (mk && accountMemory[mk] && accountMemory[mk].currency) || 'GEL', rate: 1,
     danishnuleba,
     partner, partnerTax, partnerAcc,
     txType, isIncome, memKey: mk,
@@ -1282,7 +1282,7 @@ function parseAndRender(wb, file, bank) {
   rows = parseResult.result;
   if (parseResult.demoTruncated) toast(`Demo: მხოლოდ პირველი ${DEMO_LIMIT} ჩანაწერი ჩაიტვირთა`, 'error');
   setLoading('ცხრილის გენერაცია...');
-  setTimeout(() => { renderTable(); updateMeta(file.name); show('editor'); }, 50);
+  setTimeout(() => { renderTable(); updateMeta(file.name); show('editor'); fetchMemCurrencyRates(); }, 50);
 }
 
 // ─── FILE PROCESSING ─────────────────────────────────────────
@@ -1612,6 +1612,11 @@ function onRateBadgeClick(badge) {
 async function onCurrencyChange(el) {
   const i = parseInt(el.dataset.index);
   const cur = el.value.trim().toUpperCase(); el.value=cur; rows[i].currency=cur;
+  if (rows[i].memKey && currentOrg) {
+    if (!accountMemory[rows[i].memKey]) accountMemory[rows[i].memKey] = {};
+    accountMemory[rows[i].memKey].currency = cur || 'GEL';
+    saveMem(currentOrg.name, accountMemory);
+  }
   const rb = document.getElementById('rate-'+i);
   if (!cur || cur==='GEL') { rows[i].rate=1; rows[i].rateError=false; if(rb){rb.textContent='';rb.className='rate-badge';} updateStats(); return; }
   el.classList.add('loading'); if(rb){rb.textContent='...';rb.className='rate-badge';}
@@ -1620,6 +1625,26 @@ async function onCurrencyChange(el) {
   if (rate) { rows[i].rate=rate; rows[i].rateError=false; if(rb){rb.textContent='×'+rate;rb.className='rate-badge fetched';} toast(cur+' '+getDateStr(rows[i].date)+': '+rate+' ₾','success'); }
   else { rows[i].rate=1; rows[i].rateError=true; if(rb){rb.textContent='⚠ ვერ მოიძებნა';rb.className='rate-badge error';} toast(cur+' კურსი ვერ მოიძებნა','error'); }
   updateStats();
+}
+
+async function fetchMemCurrencyRates() {
+  const pairs = new Map();
+  rows.forEach((row, i) => {
+    if (!row.currency || row.currency === 'GEL') return;
+    const k = row.currency + '|' + getDateStr(row.date);
+    if (!pairs.has(k)) pairs.set(k, []);
+    pairs.get(k).push(i);
+  });
+  for (const [k, indices] of pairs) {
+    const [cur, dateStr] = k.split('|');
+    const rate = await fetchNbgRate(cur, dateStr);
+    indices.forEach(i => {
+      rows[i].rate = rate || 1; rows[i].rateError = !rate;
+      const rb = document.getElementById('rate-' + i);
+      if (rb) { rb.textContent = rate ? '×'+rate : '⚠ ვერ'; rb.className = 'rate-badge' + (rate ? ' fetched' : ''); }
+    });
+  }
+  if (pairs.size > 0) updateStats();
 }
 
 // ─── FILTERS ─────────────────────────────────────────────────

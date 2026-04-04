@@ -32,6 +32,40 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
   const initial = (profile?.full_name || profile?.email || '?')[0].toUpperCase()
   const displayName = profile?.full_name || profile?.email || ''
 
+  const isImporter = pathname.startsWith('/dashboard/importer')
+
+  if (isImporter) {
+    return (
+      <aside style={{
+        width: '48px', flexShrink: 0,
+        background: '#0B0B0E',
+        borderRight: '1px solid rgba(255,255,255,0.05)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        height: '100vh', position: 'sticky', top: 0, overflow: 'hidden',
+      }}>
+        <Link href="/dashboard" title="ორგანიზაციებზე დაბრუნება" style={{
+          marginTop: '22px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          textDecoration: 'none',
+        }}>
+          <span style={{
+            fontFamily: 'Instrument Serif, serif',
+            fontSize: '12px',
+            color: 'rgba(255,255,255,0.55)',
+            letterSpacing: '0.08em',
+            lineHeight: 1,
+            writingMode: 'vertical-rl',
+            transform: 'rotate(180deg)',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+          }}>
+            ASSISTANTS<span style={{ color: 'rgba(108,142,255,0.7)', fontStyle: 'italic' }}>.ge</span>
+          </span>
+        </Link>
+      </aside>
+    )
+  }
+
   return (
     <aside className="app-sidebar">
 
