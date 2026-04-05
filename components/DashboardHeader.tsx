@@ -23,6 +23,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
   }
 
   const navItems: NavItem[] = [
+    { label: 'Dashboard', href: '/dashboard/home', icon: '⌂' },
     { label: 'ორგანიზაციები', href: '/dashboard', icon: '⊞' },
   ]
   if (profile?.is_admin) {
@@ -110,7 +111,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
       }}>
         {navItems.map(item => {
           const isActive = item.href === '/dashboard'
-            ? pathname === '/dashboard' || (pathname.startsWith('/dashboard') && !pathname.startsWith('/dashboard/importer'))
+            ? pathname === '/dashboard'
             : pathname.startsWith(item.href)
 
           return (

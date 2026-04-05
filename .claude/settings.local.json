@@ -6,7 +6,19 @@
       "Bash(npx next:*)",
       "Bash(cat \"c:/Users/PC/Desktop/assistant-ge/.next/types/app/dashboard/\\(pages\\)/page.ts\")",
       "Bash(ls \"c:/Users/PC/Desktop/assistant-ge/app/dashboard/\\(pages\\)/\")",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(grep -r \"TODO\\\\|FIXME\\\\|XXX\\\\|HACK\" /c/Users/PC/Desktop/assistant-ge --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"console\\\\|debugger\" /c/Users/PC/Desktop/assistant-ge/app --include=*.ts --include=*.tsx)",
+      "Bash(grep -r \"password\\\\|token\\\\|secret\\\\|key\" /c/Users/PC/Desktop/assistant-ge/app --include=*.ts --include=*.tsx)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(vercel --version)",
+      "Bash(vercel link:*)",
+      "Bash(vercel env:*)",
+      "Bash(1 echo:*)",
+      "Bash(vercel --prod --yes)"
     ]
   }
 }

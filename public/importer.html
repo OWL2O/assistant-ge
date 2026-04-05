@@ -1172,7 +1172,10 @@ function buildRow({ date, txId, paidIn, paidOut, partner, partnerTax, partnerAcc
     if (!isIncome && refData.creditors[partnerTax]) { contraAcc = refData.creditors[partnerTax].acc; contraLabel = refData.creditors[partnerTax].name; }
     else if (isIncome && refData.debtors[partnerTax]) { contraAcc = refData.debtors[partnerTax].acc; contraLabel = refData.debtors[partnerTax].name; }
   }
-  if (!contraAcc && mk && accountMemory[mk]) { contraAcc = accountMemory[mk].contra; contraLabel = accountMemory[mk].contraLabel || contraLabel; }
+  if (mk && accountMemory[mk]) {
+    if (!contraAcc) contraAcc = accountMemory[mk].contra;
+    if (accountMemory[mk].contraLabel) contraLabel = accountMemory[mk].contraLabel;
+  }
 
   return {
     date, txId,
@@ -1231,11 +1234,11 @@ function parseBogRows(raw) {
     // COM → commission; expense → O(14)=recipient name, P(15)=taxId (fallback to F(5) if O empty); income → J(9), K(10)
     const isExpense   = paidOut > 0;
     const rawPartner  = isExpense ? (r[14] || '').trim() : (r[9]  || '').trim();
-    const partner     = isCom ? 'საკომისიო' : (rawPartner || (isExpense ? (r[5] || '').trim().split(/\s/)[0] : ''));
+    const partner     = isCom ? 'საკომისიო' : (rawPartner || (isExpense ? (r[5] || '').trim() : ''));
     const partnerAcc  = '';
     const partnerTax  = isCom ? ''           : (isExpense ? (r[15] || '').trim() : (r[10] || '').trim());
 
-    result.push(buildRow({
+    const row = buildRow({
       date: r[0], txId: '', // document field empty (editable)
       paidIn, paidOut,
       partner, partnerTax,
@@ -1243,7 +1246,12 @@ function parseBogRows(raw) {
       description: (r[19] || '').trim(), // T field = დანიშნულება
       txType,
       addDesc:     '',
-    }));
+    });
+    // BOG: debit description from Excel — but respect saved memory label if present
+    if (!row.isIncome && !(row.memKey && accountMemory[row.memKey] && accountMemory[row.memKey].contraLabel)) {
+      row.debitLabel = partner || (r[19] || '').trim();
+    }
+    result.push(row);
   }
   return { result, demoTruncated };
 }
@@ -1366,22 +1374,54 @@ function onCellChange(el) {
   rows[i][field] = val;
 
   const row = rows[i];
+
+  // Save label immediately when debitLabel/creditLabel edited — even if account not yet filled
+  const isContraLabelField = (!row.locked_debit && field === 'debitLabel') || (row.locked_debit && field === 'creditLabel');
+  if (row.memKey && isContraLabelField) {
+    if (!accountMemory[row.memKey]) accountMemory[row.memKey] = {};
+    accountMemory[row.memKey].contraLabel = val;
+    saveMem(currentOrg.name, accountMemory);
+  }
+
+  // Save to memory only when both accounts are known
   if (row.memKey && row.debitAcc && row.creditAcc) {
     const contra      = row.locked_debit ? row.creditAcc   : row.debitAcc;
     const contraLabel = row.locked_debit ? row.creditLabel : row.debitLabel;
-    accountMemory[row.memKey] = { contra, contraLabel };
+    accountMemory[row.memKey] = { ...accountMemory[row.memKey], contra, contraLabel };
     saveMem(currentOrg.name, accountMemory);
+  }
 
+  // Propagate account/label changes to matching rows — always, including when clearing
+  const accountFields = ['debitAcc','debitLabel','creditAcc','creditLabel'];
+  if (accountFields.includes(field)) {
+    const isPmd = row.txType === 'PMD' || row.txType === 'საბიუჯეტო გადარიცხვები';
+    let memDirty = false;
     rows.forEach((r, j) => {
-      if (j === i || r.memKey !== row.memKey) return;
+      if (j === i) return;
+      const matches = isPmd
+        ? (row.partner && r.partner === row.partner)
+        : (r.memKey === row.memKey);
+      if (!matches) return;
       if (!r.locked_debit)  { r.debitAcc   = row.debitAcc;   r.debitLabel  = row.debitLabel; }
       if (!r.locked_credit) { r.creditAcc  = row.creditAcc;  r.creditLabel = row.creditLabel; }
+      // Persist each matched row's own memKey so next session restores them too
+      if (r.memKey && r.debitAcc && r.creditAcc) {
+        const rContra      = r.locked_debit ? r.creditAcc   : r.debitAcc;
+        const rContraLabel = r.locked_debit ? r.creditLabel : r.debitLabel;
+        accountMemory[r.memKey] = { ...accountMemory[r.memKey], contra: rContra, contraLabel: rContraLabel };
+        memDirty = true;
+      }
       const tr = document.querySelector(`tr[data-index="${j}"]`);
-      if (tr) ['debitAcc','debitLabel','creditAcc','creditLabel'].forEach(f => {
+      if (tr) accountFields.forEach(f => {
         const inp = tr.querySelector(`[data-field="${f}"]`);
-        if (inp && rows[j][f] !== inp.value) { inp.value = rows[j][f]; inp.classList.remove('warn'); inp.classList.add('filled'); }
+        if (inp && rows[j][f] !== inp.value) {
+          inp.value = rows[j][f];
+          inp.classList.remove('warn', 'filled');
+          inp.classList.add(rows[j][f] ? 'filled' : 'warn');
+        }
       });
     });
+    if (memDirty) saveMem(currentOrg.name, accountMemory);
   }
   updateStats(); checkDups();
 }
@@ -1671,7 +1711,7 @@ function rowTxt(row,col) {
     case 5: return row.creditLabel||'';
     case 6: return fAmt(row.amount);
     case 7: return row.danishnuleba||'';
-    case 8: return row.partner||'';
+    case 8: return [row.partner, row.partnerTax, row.partnerAcc].filter(Boolean).join(' ');
     case 11: return row.currency||'';
     default: return '';
   }
