@@ -82,8 +82,9 @@ export default function ForgotPasswordPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
-          <label style={labelStyle}>ელ-ფოსტა</label>
+          <label htmlFor="forgot-email" style={labelStyle}>ელ-ფოსტა</label>
           <input
+            id="forgot-email"
             className="input"
             type="email"
             placeholder="you@example.com"
@@ -91,6 +92,7 @@ export default function ForgotPasswordPage() {
             onChange={e => setEmail(e.target.value)}
             required
             autoFocus
+            autoComplete="email"
           />
         </div>
 

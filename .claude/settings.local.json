@@ -18,7 +18,8 @@
       "Bash(vercel link:*)",
       "Bash(vercel env:*)",
       "Bash(1 echo:*)",
-      "Bash(vercel --prod --yes)"
+      "Bash(vercel --prod --yes)",
+      "Bash(npm install:*)"
     ]
   }
 }

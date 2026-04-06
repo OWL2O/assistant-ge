@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Organization } from '@/lib/types'
+import RenewOrgButton from './RenewOrgButton'
 
 function getDaysRemaining(expiresAt: string | null): number | null {
   if (!expiresAt) return null
@@ -135,6 +136,7 @@ export default function OrgCard({ org }: { org: Organization }) {
               <button
                 onClick={saveRename}
                 disabled={saving}
+                aria-label="სახელის შენახვა"
                 style={{
                   background: 'var(--accent)', border: 'none', borderRadius: '4px',
                   padding: '5px 12px', color: '#fff', fontSize: '12px', fontWeight: 500,
@@ -146,6 +148,7 @@ export default function OrgCard({ org }: { org: Organization }) {
               <button
                 onClick={cancelEdit}
                 disabled={saving}
+                aria-label="გაუქმება"
                 style={{
                   background: 'transparent', border: '1px solid var(--border2)',
                   borderRadius: '4px', padding: '5px 10px', color: 'var(--text2)',
@@ -174,6 +177,7 @@ export default function OrgCard({ org }: { org: Organization }) {
               <button
                 onClick={() => { setDraftName(org.name); setEditing(true) }}
                 title="სახელის შეცვლა"
+                aria-label="სახელის შეცვლა"
                 style={{
                   background: 'none', border: 'none', padding: '2px 4px',
                   cursor: 'pointer', color: 'var(--text3)', fontSize: '12px',
@@ -212,9 +216,12 @@ export default function OrgCard({ org }: { org: Organization }) {
 
         {/* Expired message */}
         {isExpired && !editing && (
-          <p style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '4px', opacity: 0.85 }}>
-            ვადა გაუვიდა — განახლება 20 ₾
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+            <p style={{ fontSize: '12px', color: 'var(--danger)', opacity: 0.85, margin: 0 }}>
+              ვადა გაუვიდა — განახლება 1 კრედიტი
+            </p>
+            <RenewOrgButton orgId={org.id} variant="primary" />
+          </div>
         )}
       </div>
 
@@ -227,6 +234,9 @@ export default function OrgCard({ org }: { org: Organization }) {
         flexShrink: 0,
       }}>
         {isActive && days !== null && <CountdownBar days={days} />}
+        {isActive && days !== null && days <= 30 && days > 0 && (
+          <RenewOrgButton orgId={org.id} variant="ghost" />
+        )}
 
         {org.is_active && (
           <Link

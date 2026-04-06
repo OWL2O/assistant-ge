@@ -1,30 +1,50 @@
+import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { NextResponse } from 'next/server'
+import { renameOrgSchema } from '@/lib/validation'
+import { errorResponse, HttpError, parseJson } from '@/lib/api-handler'
+import { logger } from '@/lib/logger'
+
+export const runtime = 'nodejs'
+
+const ROUTE = 'admin/rename-org'
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  let userId: string | null = null
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new HttpError(401, 'გთხოვთ გაიაროთ ავტორიზაცია')
+    userId = user.id
 
-  // Use admin client to bypass RLS
-  const admin = createAdminClient()
-  const { data: profile } = await admin
-    .from('profiles').select('is_admin').eq('id', user.id).single()
-  if (!profile?.is_admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    const admin = createAdminClient()
+    const { data: profile, error: pErr } = await admin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+    if (pErr) throw pErr
+    if (!profile?.is_admin) throw new HttpError(403, 'წვდომა აკრძალულია')
 
-  const { orgId, name } = await request.json()
-  if (!orgId || !name?.trim()) return NextResponse.json({ error: 'Invalid params' }, { status: 400 })
+    const { orgId, name } = await parseJson(request, renameOrgSchema)
 
-  const { data: org } = await admin
-    .from('organizations').select('is_demo').eq('id', orgId).single()
-  if (org?.is_demo) return NextResponse.json({ error: 'Demo ორგანიზაციის სახელი არ შეიძლება შეიცვალოს' }, { status: 400 })
+    const { data: org, error: oErr } = await admin
+      .from('organizations')
+      .select('is_demo')
+      .eq('id', orgId)
+      .single()
+    if (oErr) throw oErr
+    if (org?.is_demo) throw new HttpError(400, 'Demo ორგანიზაციის სახელი არ შეიძლება შეიცვალოს')
 
-  const { error } = await admin
-    .from('organizations')
-    .update({ name: name.trim() })
-    .eq('id', orgId)
+    const { error } = await admin
+      .from('organizations')
+      .update({ name })
+      .eq('id', orgId)
+    if (error) throw error
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ ok: true })
+    logger.info('api.org_renamed', { route: ROUTE, userId, orgId, name })
+    return NextResponse.json({ ok: true })
+  } catch (err) {
+    return errorResponse(err, { route: ROUTE, userId })
+  }
 }

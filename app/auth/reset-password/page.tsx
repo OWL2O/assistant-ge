@@ -52,8 +52,9 @@ export default function ResetPasswordPage() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <div>
-          <label style={labelStyle}>ჩაწერეთ ახალი პაროლი</label>
+          <label htmlFor="reset-password" style={labelStyle}>ჩაწერეთ ახალი პაროლი</label>
           <input
+            id="reset-password"
             className={`input ${error ? 'error' : ''}`}
             type="password"
             placeholder="••••••••"
@@ -62,12 +63,14 @@ export default function ResetPasswordPage() {
             required
             autoFocus
             minLength={8}
+            autoComplete="new-password"
           />
         </div>
 
         <div>
-          <label style={labelStyle}>გაიმეორეთ პაროლი</label>
+          <label htmlFor="reset-confirm" style={labelStyle}>გაიმეორეთ პაროლი</label>
           <input
+            id="reset-confirm"
             className={`input ${error ? 'error' : ''}`}
             type="password"
             placeholder="••••••••"
@@ -75,6 +78,7 @@ export default function ResetPasswordPage() {
             onChange={e => setConfirm(e.target.value)}
             required
             minLength={8}
+            autoComplete="new-password"
           />
         </div>
 

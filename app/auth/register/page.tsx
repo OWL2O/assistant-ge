@@ -113,39 +113,45 @@ export default function RegisterPage() {
       <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
 
         <div>
-          <label style={labelStyle}>სახელი და გვარი</label>
+          <label htmlFor="reg-name" style={labelStyle}>სახელი და გვარი</label>
           <input
+            id="reg-name"
             className="input-line"
             type="text"
             placeholder="გიორგი მაისურაძე"
             value={fullName}
             onChange={e => setFullName(e.target.value)}
             required
+            autoComplete="name"
           />
         </div>
 
         <div>
-          <label style={labelStyle}>ელ-ფოსტა</label>
+          <label htmlFor="reg-email" style={labelStyle}>ელ-ფოსტა</label>
           <input
+            id="reg-email"
             className={`input-line ${error ? 'error' : ''}`}
             type="email"
             placeholder="you@example.com"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
         </div>
 
         <div>
-          <label style={labelStyle}>პაროლი</label>
+          <label htmlFor="reg-password" style={labelStyle}>პაროლი</label>
           <div style={{ position: 'relative' }}>
             <input
+              id="reg-password"
               className={`input-line ${error ? 'error' : ''}`}
               type={showPw ? 'text' : 'password'}
               placeholder="მინიმუმ 8 სიმბოლო"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
+              autoComplete="new-password"
               style={{ paddingRight: '36px' }}
             />
             <button

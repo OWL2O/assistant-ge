@@ -72,8 +72,9 @@ export default function LoginPage() {
 
         {/* Email */}
         <div>
-          <label style={labelStyle}>ელ-ფოსტა</label>
+          <label htmlFor="login-email" style={labelStyle}>ელ-ფოსტა</label>
           <input
+            id="login-email"
             className={`input-line ${error ? 'error' : ''}`}
             type="email"
             placeholder="you@example.com"
@@ -82,6 +83,7 @@ export default function LoginPage() {
             list="saved-emails-list"
             required
             autoFocus
+            autoComplete="email"
           />
           <datalist id="saved-emails-list">
             {savedEmails.map(e => <option key={e} value={e} />)}
@@ -91,7 +93,7 @@ export default function LoginPage() {
         {/* Password */}
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '10px' }}>
-            <label style={{ ...labelStyle, marginBottom: 0 }}>პაროლი</label>
+            <label htmlFor="login-password" style={{ ...labelStyle, marginBottom: 0 }}>პაროლი</label>
             <Link href="/auth/forgot-password" style={{
               fontSize: '11px', color: 'var(--text3)',
               fontFamily: 'DM Mono, monospace',
@@ -103,12 +105,14 @@ export default function LoginPage() {
           </div>
           <div style={{ position: 'relative' }}>
             <input
+              id="login-password"
               className={`input-line ${error ? 'error' : ''}`}
               type={showPw ? 'text' : 'password'}
               placeholder="••••••••"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
+              autoComplete="current-password"
               style={{ paddingRight: '36px' }}
             />
             <button

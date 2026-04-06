@@ -1177,13 +1177,17 @@ function buildRow({ date, txId, paidIn, paidOut, partner, partnerTax, partnerAcc
     if (accountMemory[mk].contraLabel) contraLabel = accountMemory[mk].contraLabel;
   }
 
+  const byAcc = accountMemory.__accountCurrency || {};
+  const memKeyCur = mk && accountMemory[mk] && accountMemory[mk].currency;
+  const accCur    = contraAcc && byAcc[contraAcc];
+
   return {
     date, txId,
     debitAcc:    isIncome ? bankAccount : contraAcc,
     debitLabel:  isIncome ? BANK_LABEL   : contraLabel,
     creditAcc:   isIncome ? contraAcc    : bankAccount,
     creditLabel: isIncome ? contraLabel  : BANK_LABEL,
-    amount, currency: (mk && accountMemory[mk] && accountMemory[mk].currency) || 'GEL', rate: 1,
+    amount, currency: memKeyCur || accCur || 'GEL', rate: 1,
     danishnuleba,
     partner, partnerTax, partnerAcc,
     txType, isIncome, memKey: mk,
@@ -1389,6 +1393,19 @@ function onCellChange(el) {
     const contraLabel = row.locked_debit ? row.creditLabel : row.debitLabel;
     accountMemory[row.memKey] = { ...accountMemory[row.memKey], contra, contraLabel };
     saveMem(currentOrg.name, accountMemory);
+  }
+
+  // Auto-populate currency from account memory when a linked (contra) account is set
+  const isContraAccField = (!row.locked_debit && field === 'debitAcc') || (!row.locked_credit && field === 'creditAcc');
+  if (isContraAccField && val && val !== bankAccount) {
+    const byAcc = accountMemory.__accountCurrency || {};
+    const storedCur = byAcc[val];
+    if (storedCur && storedCur !== row.currency) {
+      row.currency = storedCur;
+      const tr0 = document.querySelector(`tr[data-index="${i}"]`);
+      const curInp = tr0 && tr0.querySelector(`.currency-input[data-index="${i}"]`);
+      if (curInp) { curInp.value = storedCur; onCurrencyChange(curInp); }
+    }
   }
 
   // Propagate account/label changes to matching rows — always, including when clearing
@@ -1652,9 +1669,17 @@ function onRateBadgeClick(badge) {
 async function onCurrencyChange(el) {
   const i = parseInt(el.dataset.index);
   const cur = el.value.trim().toUpperCase(); el.value=cur; rows[i].currency=cur;
-  if (rows[i].memKey && currentOrg) {
-    if (!accountMemory[rows[i].memKey]) accountMemory[rows[i].memKey] = {};
-    accountMemory[rows[i].memKey].currency = cur || 'GEL';
+  if (currentOrg) {
+    if (rows[i].memKey) {
+      if (!accountMemory[rows[i].memKey]) accountMemory[rows[i].memKey] = {};
+      accountMemory[rows[i].memKey].currency = cur || 'GEL';
+    }
+    // Remember currency keyed by the linked (contra) account — recalled when that account is picked again
+    const contraAcc = rows[i].locked_debit ? rows[i].creditAcc : rows[i].debitAcc;
+    if (contraAcc && contraAcc !== bankAccount) {
+      if (!accountMemory.__accountCurrency) accountMemory.__accountCurrency = {};
+      accountMemory.__accountCurrency[contraAcc] = cur || 'GEL';
+    }
     saveMem(currentOrg.name, accountMemory);
   }
   const rb = document.getElementById('rate-'+i);
