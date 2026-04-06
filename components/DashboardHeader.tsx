@@ -23,7 +23,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
   }
 
   const navItems: NavItem[] = [
-    { label: 'Dashboard', href: '/dashboard/home', icon: '⌂' },
+    { label: 'მთავარი', href: '/dashboard/home', icon: '⌂' },
     { label: 'ორგანიზაციები', href: '/dashboard', icon: '⊞' },
   ]
   if (profile?.is_admin) {
@@ -96,7 +96,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
           textTransform: 'uppercase',
           marginTop: '6px',
         }}>
-          TBC → FINS
+          TBC / BOG → FINS
         </div>
       </div>
 

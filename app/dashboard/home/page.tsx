@@ -88,7 +88,7 @@ export default function DashboardHomePage() {
           letterSpacing: '-0.5px',
           marginBottom: '20px',
         }}>
-          <span style={{ color: '#ffffff' }}>TBC ამონაწერიდან</span>
+          <span style={{ color: '#ffffff' }}>TBC / BOG ამონაწერიდან</span>
           <br />
           <span style={{
             background: 'linear-gradient(135deg, #6c8eff 0%, #a78bfa 50%, #6c8eff 100%)',
@@ -108,7 +108,7 @@ export default function DashboardHomePage() {
           maxWidth: '520px',
           fontWeight: 400,
         }}>
-          ASSISTANTS.ge გარდაქმნის TBC ბანკის Excel-ამონაწერს FINS-ბუღალტრული
+          ASSISTANTS.ge გარდაქმნის TBC და BOG ბანკების Excel-ამონაწერს FINS-ბუღალტრული
           პროგრამის იმპორტის ფორმატში — ვალუტის კურსების ავტომატური ჩაწერით,
           ნულოვანი ხელით შეყვანით.
         </p>
@@ -227,7 +227,7 @@ export default function DashboardHomePage() {
               <text x="65" y="46" textAnchor="middle"
                 fill="rgba(74,222,128,0.65)" fontSize="12" fontFamily="monospace" letterSpacing="1">XLS</text>
               <text x="65" y="62" textAnchor="middle"
-                fill="rgba(74,222,128,0.35)" fontSize="8" fontFamily="monospace">TBC ამონაწერი</text>
+                fill="rgba(74,222,128,0.35)" fontSize="8" fontFamily="monospace">TBC / BOG ამონაწერი</text>
               {[78, 86, 94].map((y) => (
                 <rect key={y} x="22" y={y} width={y === 86 ? 54 : 86} height="4" rx="2"
                   fill="rgba(74,222,128,0.1)" />

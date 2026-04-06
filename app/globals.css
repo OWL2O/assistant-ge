@@ -393,3 +393,23 @@ tbody td.primary { color: var(--text); }
   .auth-panel-right { padding: 40px 28px; }
   .app-sidebar { display: none; }
 }
+
+/* ── Mobile block overlay ──────────────────────────────── */
+.mobile-block {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-block {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--bg);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 28px;
+    text-align: center;
+  }
+}
