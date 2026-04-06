@@ -7,7 +7,6 @@
 
 import { NextResponse } from 'next/server'
 import { ZodError, type ZodTypeAny, type z } from 'zod'
-import * as Sentry from '@sentry/nextjs'
 import { logger, serializeError } from './logger'
 
 export class HttpError extends Error {
@@ -72,7 +71,6 @@ export function errorResponse(
     userId: ctx.userId ?? null,
     err: serializeError(err),
   })
-  Sentry.captureException(err, { tags: { route: ctx.route }, extra: { userId: ctx.userId } })
 
   return NextResponse.json({ error: 'სერვერზე შეცდომა' }, { status: 500 })
 }
