@@ -25,6 +25,7 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
   const navItems: NavItem[] = [
     { label: 'მთავარი', href: '/dashboard/home', icon: '⌂' },
     { label: 'ორგანიზაციები', href: '/dashboard', icon: '⊞' },
+    { label: 'კურსები', href: '/dashboard/rates', icon: '₾' },
   ]
   if (profile?.is_admin) {
     navItems.push({ label: 'ადმინი', href: '/admin', icon: '⚙' })

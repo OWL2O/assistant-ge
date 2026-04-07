@@ -822,6 +822,15 @@
   </div>
 </div>
 
+<!-- RATES LOADING MODAL -->
+<div class="modal-overlay" id="rates-loading-modal">
+  <div class="modal" style="max-width:360px;text-align:center;padding:36px 32px">
+    <div class="spinner" style="margin:0 auto 24px"></div>
+    <div class="modal-title" style="margin-bottom:12px">კურსები იტვირთება...</div>
+    <div class="modal-sub">ბოდიში შეფერხებისთვის — ეროვნული ბანკიდან სავალუტო კურსების მოტანა გარკვეულ დროს მოითხოვს.</div>
+  </div>
+</div>
+
 <!-- BANK MISMATCH MODAL -->
 <div class="modal-overlay" id="mismatch-modal">
   <div class="modal" style="max-width:400px">
@@ -1667,28 +1676,86 @@ function onRateBadgeClick(badge) {
 }
 
 async function onCurrencyChange(el) {
-  const i = parseInt(el.dataset.index);
-  const cur = el.value.trim().toUpperCase(); el.value=cur; rows[i].currency=cur;
+  const i       = parseInt(el.dataset.index);
+  const cur     = el.value.trim().toUpperCase();
+  el.value      = cur;
+  rows[i].currency = cur;
+
+  const memKey    = rows[i].memKey;
+  const contraAcc = rows[i].locked_debit ? rows[i].creditAcc : rows[i].debitAcc;
+
   if (currentOrg) {
-    if (rows[i].memKey) {
-      if (!accountMemory[rows[i].memKey]) accountMemory[rows[i].memKey] = {};
-      accountMemory[rows[i].memKey].currency = cur || 'GEL';
+    if (memKey) {
+      if (!accountMemory[memKey]) accountMemory[memKey] = {};
+      accountMemory[memKey].currency = cur || 'GEL';
     }
-    // Remember currency keyed by the linked (contra) account — recalled when that account is picked again
-    const contraAcc = rows[i].locked_debit ? rows[i].creditAcc : rows[i].debitAcc;
     if (contraAcc && contraAcc !== bankAccount) {
       if (!accountMemory.__accountCurrency) accountMemory.__accountCurrency = {};
       accountMemory.__accountCurrency[contraAcc] = cur || 'GEL';
     }
     saveMem(currentOrg.name, accountMemory);
   }
-  const rb = document.getElementById('rate-'+i);
-  if (!cur || cur==='GEL') { rows[i].rate=1; rows[i].rateError=false; if(rb){rb.textContent='';rb.className='rate-badge';} updateStats(); return; }
-  el.classList.add('loading'); if(rb){rb.textContent='...';rb.className='rate-badge';}
-  const rate = await fetchNbgRate(cur, getDateStr(rows[i].date));
-  el.classList.remove('loading');
-  if (rate) { rows[i].rate=rate; rows[i].rateError=false; if(rb){rb.textContent='×'+rate;rb.className='rate-badge fetched';} toast(cur+' '+getDateStr(rows[i].date)+': '+rate+' ₾','success'); }
-  else { rows[i].rate=1; rows[i].rateError=true; if(rb){rb.textContent='⚠ ვერ მოიძებნა';rb.className='rate-badge error';} toast(cur+' კურსი ვერ მოიძებნა','error'); }
+
+  // Sync all sibling rows that share the same memKey or contra-account
+  const affected = [i];
+  rows.forEach((r, j) => {
+    if (j === i || r.deleted) return;
+    const sameKey = memKey && r.memKey === memKey;
+    const sameCnt = contraAcc && contraAcc !== bankAccount &&
+                    (r.locked_debit ? r.creditAcc : r.debitAcc) === contraAcc;
+    if (sameKey || sameCnt) {
+      rows[j].currency = cur;
+      const inp = document.querySelector(`.currency-input[data-index="${j}"]`);
+      if (inp) inp.value = cur;
+      affected.push(j);
+    }
+  });
+
+  // Switching back to GEL — clear all rate badges immediately
+  if (!cur || cur === 'GEL') {
+    affected.forEach(j => {
+      rows[j].rate = 1; rows[j].rateError = false;
+      const rb = document.getElementById('rate-' + j);
+      if (rb) { rb.textContent = ''; rb.className = 'rate-badge'; }
+    });
+    updateStats();
+    return;
+  }
+
+  // Show loading state on every affected input
+  affected.forEach(j => {
+    const inp = document.querySelector(`.currency-input[data-index="${j}"]`);
+    if (inp) inp.classList.add('loading');
+    const rb = document.getElementById('rate-' + j);
+    if (rb) { rb.textContent = '...'; rb.className = 'rate-badge'; }
+  });
+
+  // Group by date — each unique currency+date is fetched once, result is cached
+  const byDate = new Map();
+  affected.forEach(j => {
+    const d = getDateStr(rows[j].date);
+    if (!byDate.has(d)) byDate.set(d, []);
+    byDate.get(d).push(j);
+  });
+
+  for (const [dateStr, idxs] of byDate) {
+    const rate = await fetchNbgRate(cur, dateStr);
+    idxs.forEach(j => {
+      rows[j].rate = rate || 1; rows[j].rateError = !rate;
+      const inp = document.querySelector(`.currency-input[data-index="${j}"]`);
+      if (inp) inp.classList.remove('loading');
+      const rb = document.getElementById('rate-' + j);
+      if (rb) {
+        rb.textContent = rate ? '×' + rate : '⚠ ვერ მოიძებნა';
+        rb.className   = 'rate-badge' + (rate ? ' fetched' : ' error');
+      }
+    });
+  }
+
+  const msg = affected.length > 1
+    ? `${cur}: ${affected.length} სტრიქონი განახლდა`
+    : `${cur} ${getDateStr(rows[i].date)}: ${rows[i].rate} ₾`;
+  toast(msg, rows[i].rateError ? 'error' : 'success');
   updateStats();
 }
 
@@ -1700,6 +1767,8 @@ async function fetchMemCurrencyRates() {
     if (!pairs.has(k)) pairs.set(k, []);
     pairs.get(k).push(i);
   });
+  if (pairs.size === 0) return;
+  document.getElementById('rates-loading-modal').classList.add('visible');
   for (const [k, indices] of pairs) {
     const [cur, dateStr] = k.split('|');
     const rate = await fetchNbgRate(cur, dateStr);
@@ -1709,7 +1778,8 @@ async function fetchMemCurrencyRates() {
       if (rb) { rb.textContent = rate ? '×'+rate : '⚠ ვერ'; rb.className = 'rate-badge' + (rate ? ' fetched' : ''); }
     });
   }
-  if (pairs.size > 0) updateStats();
+  document.getElementById('rates-loading-modal').classList.remove('visible');
+  updateStats();
 }
 
 // ─── FILTERS ─────────────────────────────────────────────────
