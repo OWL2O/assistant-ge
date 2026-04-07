@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import GoogleButton from '@/components/GoogleButton'
 
 const EMAILS_KEY = 'assistants_saved_emails'
 
@@ -155,6 +156,20 @@ export default function LoginPage() {
           {loading ? 'შემოწმება...' : 'შესვლა'}
         </button>
       </form>
+
+      {/* Divider */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '12px',
+        margin: '28px 0',
+      }}>
+        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+        <span style={{ fontSize: '11px', color: 'var(--text3)', fontFamily: 'DM Mono, monospace', letterSpacing: '0.08em' }}>
+          ან
+        </span>
+        <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+      </div>
+
+      <GoogleButton label="Google-ით შესვლა" />
 
       {/* Register link */}
       <div style={{

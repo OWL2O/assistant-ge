@@ -19,7 +19,17 @@
       "Bash(vercel env:*)",
       "Bash(1 echo:*)",
       "Bash(vercel --prod --yes)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(npm view:*)",
+      "Bash(python3 -c \"import sys,json; versions=json.load\\(sys.stdin\\); print\\([v for v in versions if v.startswith\\(''''3.25''''\\)][-5:]\\)\")",
+      "Bash(python3 -c \":*)",
+      "Bash(git stash:*)",
+      "Bash(ls -la C:/Users/PC/Desktop/assistant-ge/instrumentation* C:/Users/PC/Desktop/assistant-ge/proxy* C:/Users/PC/Desktop/assistant-ge/middleware*)",
+      "Bash(tasklist)",
+      "Bash(del \"C:\\\\Users\\\\PC\\\\Desktop\\\\assistant-ge\\\\.git\\\\index.lock\")",
+      "Bash(cmd.exe /c \"del C:\\\\Users\\\\PC\\\\Desktop\\\\assistant-ge\\\\.git\\\\index.lock\")",
+      "Bash(powershell -Command \"Remove-Item ''C:\\\\Users\\\\PC\\\\Desktop\\\\assistant-ge\\\\.git\\\\index.lock'' -Force -ErrorAction SilentlyContinue; cd ''C:\\\\Users\\\\PC\\\\Desktop\\\\assistant-ge''; git add app/auth/callback/route.ts components/DashboardHeader.tsx proxy.ts public/importer.html app/dashboard/rates/; git rm --cached middleware.ts; git commit -m ''Add rates page, fix forgot-password, Next.js 16 migration''\")",
+      "Bash(grep -E \"^-.*\\\\.\\(ts|js\\)$\")"
     ]
   }
 }

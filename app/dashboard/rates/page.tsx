@@ -92,10 +92,7 @@ export default function RatesPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(
-        `https://nbg.gov.ge/gw/api/ct/monetarypolicy/currencies/ka/json/?date=${d}`,
-        { cache: 'no-store' }
-      )
+      const res = await fetch(`/api/rates?date=${d}`, { cache: 'no-store' })
       if (!res.ok) throw new Error('Network error')
       const json: NbgResponse = await res.json()
       setData(json[0]?.currencies ?? [])

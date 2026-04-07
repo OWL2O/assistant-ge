@@ -88,7 +88,10 @@ export default function DashboardHomePage() {
           letterSpacing: '-0.5px',
           marginBottom: '20px',
         }}>
-          <span style={{ color: '#ffffff' }}>TBC / BOG ამონაწერიდან</span>
+          <span style={{ color: '#ffffff' }}>
+            <span style={{ fontFamily: 'var(--font-mono), monospace' }}>TBC / BOG</span>
+            {' '}ამონაწერიდან
+          </span>
           <br />
           <span style={{
             background: 'linear-gradient(135deg, #6c8eff 0%, #a78bfa 50%, #6c8eff 100%)',
@@ -97,7 +100,8 @@ export default function DashboardHomePage() {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text',
           }}>
-            FINS-ში ავტომატურად
+            <span style={{ fontFamily: 'var(--font-mono), monospace', WebkitTextFillColor: 'transparent' }}>FINS</span>
+            -ში ავტომატურად
           </span>
         </h1>
 

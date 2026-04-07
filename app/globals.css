@@ -1,26 +1,26 @@
 /* Fonts loaded via next/font in layout.tsx — no @import needed */
 
 :root {
-  --bg:       #0a0a0b;
-  --surface:  #111114;
-  --surface2: #161619;
-  --surface3: #1c1c20;
-  --border:   rgba(255,255,255,0.06);
-  --border2:  rgba(255,255,255,0.10);
+  --bg:       #0f0f14;
+  --surface:  #17171e;
+  --surface2: #1d1d27;
+  --surface3: #23232f;
+  --border:   rgba(255,255,255,0.09);
+  --border2:  rgba(255,255,255,0.15);
   --accent:   #6c8eff;
   --accent-h: #8aa3ff;
   --accent2:  #4ade80;
   --accent2-h:#6ee7a0;
   --warn:     #fbbf24;
   --danger:   #f87171;
-  --text:     #e8e8f0;
-  --text2:    #8888aa;
-  --text3:    #55556a;
+  --text:     #eeeef5;
+  --text2:    #9090b0;
+  --text3:    #60607a;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
-  --shadow-md: 0 4px 20px rgba(0,0,0,0.6);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.7);
-  --shadow-xl: 0 20px 48px rgba(0,0,0,0.8);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.5);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+  --shadow-xl: 0 20px 48px rgba(0,0,0,0.7);
 
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -340,13 +340,13 @@ tbody td.primary { color: var(--text); }
   display: flex; min-height: 100vh;
   background: var(--bg);
   background-image:
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
   background-size: 40px 40px;
 }
 .app-sidebar {
   width: 220px; flex-shrink: 0;
-  background: rgba(11,11,14,0.82);
+  background: rgba(14,14,19,0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-right: 1px solid rgba(255,255,255,0.05);
@@ -366,7 +366,7 @@ tbody td.primary { color: var(--text); }
 }
 .auth-panel-left {
   flex: 0 0 52%;
-  background: #080809;
+  background: #0c0c12;
   display: flex; flex-direction: column;
   justify-content: space-between;
   padding: 48px 56px;
@@ -376,15 +376,15 @@ tbody td.primary { color: var(--text); }
   content: '';
   position: absolute; inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
   background-size: 52px 52px;
   pointer-events: none;
 }
 .auth-panel-right {
   flex: 1;
   display: flex; align-items: center; justify-content: center;
-  background: #0d0d10;
+  background: #121218;
   padding: 48px 56px;
 }
 

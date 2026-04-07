@@ -8,7 +8,6 @@ import type { Profile } from '@/lib/types'
 type NavItem = {
   label: string
   href: string
-  icon: string
 }
 
 export default function DashboardHeader({ profile }: { profile: Profile | null }) {
@@ -23,12 +22,12 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
   }
 
   const navItems: NavItem[] = [
-    { label: 'მთავარი', href: '/dashboard/home', icon: '⌂' },
-    { label: 'ორგანიზაციები', href: '/dashboard', icon: '⊞' },
-    { label: 'კურსები', href: '/dashboard/rates', icon: '₾' },
+    { label: 'მთავარი', href: '/dashboard/home' },
+    { label: 'ორგანიზაციები', href: '/dashboard' },
+    { label: 'კურსები', href: '/dashboard/rates' },
   ]
   if (profile?.is_admin) {
-    navItems.push({ label: 'ადმინი', href: '/admin', icon: '⚙' })
+    navItems.push({ label: 'ადმინი', href: '/admin' })
   }
 
   const initial = (profile?.full_name || profile?.email || '?')[0].toUpperCase()
@@ -122,7 +121,6 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '10px',
                 padding: '9px 12px',
                 borderRadius: '4px',
                 fontSize: '13px',
@@ -133,9 +131,6 @@ export default function DashboardHeader({ profile }: { profile: Profile | null }
                 textDecoration: 'none',
               }}
             >
-              <span style={{ fontSize: '14px', lineHeight: 1, width: '16px', textAlign: 'center', flexShrink: 0 }}>
-                {item.icon}
-              </span>
               {item.label}
             </Link>
           )
